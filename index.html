@@ -81,6 +81,11 @@ td:first-child,th:first-child{text-align:left}
 .tag.ok{background:var(--good-bg);color:var(--good)}.tag.ng{background:var(--bad-bg);color:var(--bad)}.tag.wait{background:var(--surface-2);color:var(--text-2)}.tag.miss{background:var(--warn-bg);color:var(--warn)}
 .guide ol,.guide ul{padding-left:20px;margin:6px 0}
 .guide li{margin:3px 0}
+.prov-tag{display:inline-flex;align-items:center;gap:6px;margin-left:6px;padding:0 7px;border-radius:9px;font-size:11px;font-weight:600;background:var(--warn-bg);color:var(--warn)}
+.prov-tag button{border:0;background:none;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
+.form input.prov{border-color:var(--warn);background:var(--warn-bg)}
+.prov-card{border-color:var(--warn)}
+.prov-card h2{color:var(--warn)}
 .formula{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-family:Consolas,monospace;font-size:12.5px;white-space:pre-wrap}
 </style>
 </head>
@@ -112,6 +117,7 @@ td:first-child,th:first-child{text-align:left}
 
 <!-- ① 결론 -->
 <section class="panel on" id="p-sum">
+  <div id="provCard"></div>
   <div id="verdict"></div>
   <div class="kpis" id="sumKpis"></div>
   <div class="card"><h2>한 줄 요약 숫자</h2><div class="tw" id="sumTable"></div></div>
@@ -266,9 +272,15 @@ const DEFAULTS={obsDays:14,padDays:30,asOf:'',sameRegion:false,
   profit:1000000,careCost:20000,careReplaced:true,visitCost:80000,testFixed:0,
   expAge:'75',coverage:100,relRed:'',salary:3000000,burden:20,carCost:700000,etcCost:100000,
   capMetro:5,capLocal:3.5,workDays:21,util:80,hqCost:0,outCost:60000,expMode:"inhouse"};
+// 실제 수치 없이 임의로 넣은 가정 — 확정 전까지 화면에 "임의값"으로 표시
+const PROV={visitCost:['방문 1건 비용','roi'],salary:['설치기사 1인 월 급여','exp'],burden:['4대보험·퇴직충당 (%)','exp'],
+  carCost:['차량·유류·통행료 (월)','exp'],capMetro:['1일 방문 건수 — 수도권','exp'],capLocal:['1일 방문 건수 — 지방','exp'],outCost:['외주 방문 단가','exp']};
 const LS_KEY='talkisVisit.settings';
 let S={...DEFAULTS};
 try{Object.assign(S,JSON.parse(localStorage.getItem(LS_KEY)||'{}'))}catch(e){}
+S.confirmed={...(S.confirmed||{})};
+function saveSettings(){try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
+function confirmProv(k,on=true){if(on)S.confirmed[k]=true;else delete S.confirmed[k];saveSettings();render()}
 
 let contracts=[];   // 톡이즈 계약 (개인정보 제외)
 let visits=[];      // 방문설치 기록
@@ -452,7 +464,8 @@ function bindInputs(){
     if(el.type==='checkbox')el.checked=!!S[k];else el.value=S[k];
     el.addEventListener(el.tagName==='SELECT'||el.type==='checkbox'?'change':'input',()=>{
       S[k]=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?'':+el.value):el.value;
-      try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}
+      if(PROV[k])S.confirmed[k]=true;   // 값을 직접 고치면 확정으로 간주
+      saveSettings();
       render();
     });
   });
@@ -548,9 +561,30 @@ function expansion(A,R,minAge){
 function kpi(l,v,d,dotVar){return`<div class="kpi"><div class="l">${dotVar?`<span class="dot" style="background:var(${dotVar})"></span>`:''}${l}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`}
 function render(){
   const A=analyze(),R=roiCalc(A),E=expansion(A,R,+S.expAge);
-  renderSummary(A,R,E);renderCompare(A);renderRoi(A,R);renderExp(A,R,E);renderGuide(A,E);renderLog(A);
+  renderProv();renderSummary(A,R,E);renderCompare(A);renderRoi(A,R);renderExp(A,R,E);renderGuide(A,E);renderLog(A);
   refreshStatus();
 }
+function provVal(k){return k==='burden'?S[k]+'%':k.startsWith('cap')?S[k]+'건':won(+S[k])}
+function renderProv(){
+  const open=Object.keys(PROV).filter(k=>!S.confirmed[k]);
+  document.querySelectorAll('[data-k]').forEach(el=>{
+    const k=el.dataset.k;if(!PROV[k])return;
+    const lab=el.closest('label');let tg=lab.querySelector('.prov-tag');
+    el.classList.toggle('prov',!S.confirmed[k]);
+    if(S.confirmed[k]){tg?.remove();return}
+    if(!tg){tg=document.createElement('span');tg.className='prov-tag';tg.innerHTML=`임의값 <button type="button" data-prov="${k}">이 값으로 확정</button>`;lab.insertBefore(tg,el)}
+  });
+  $('provCard').innerHTML=open.length?`<div class="card prov-card"><h2>확정 필요한 가정 ${open.length}개</h2>
+    <p class="note" style="margin-top:0">아래 값은 실제 수치 없이 임의로 넣은 것입니다. ③·④ 탭에서 실제 값으로 고치거나, 맞다면 "확정"을 누르세요. 확정 전 ROI·확장 결과는 참고용입니다.</p>
+    <div class="tw"><table><tr><th>항목</th><th>현재 값</th><th>수정 위치</th><th></th></tr>${open.map(k=>`<tr><td>${PROV[k][0]}</td><td>${provVal(k)}</td><td><button class="btn" data-go="${PROV[k][1]}">${PROV[k][1]==='roi'?'③ 테스트 ROI':'④ 전담인력 확장'}</button></td><td><button class="btn" data-prov="${k}">확정</button></td></tr>`).join('')}</table></div></div>`
+    :`<p class="note" style="margin:0 0 12px">비용 가정 ${Object.keys(PROV).length}개 모두 확정됨 · <button class="btn" data-reprov="1">다시 임의값으로 표시</button></p>`;
+}
+document.addEventListener('click',e=>{
+  const t=e.target;if(!t.dataset)return;
+  if(t.dataset.prov)confirmProv(t.dataset.prov);
+  else if(t.dataset.go)document.querySelector(`#tabs button[data-t="${t.dataset.go}"]`)?.click();
+  else if(t.dataset.reprov){S.confirmed={};saveSettings();render()}
+});
 function renderSummary(A,R,E){
   let cls='idle',t,items=[];
   const B=E.B,seg75=segStats(B,75);
