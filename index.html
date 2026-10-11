@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>톡이즈 방문설치 ROI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f4f4f2; --surface:#fcfcfb; --surface-2:#f0efec; --border:#e0dfda;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#8a8984;
+  --s-ship:#2a78d6; --s-visit:#eb6834;
+  --good:#1a7f3c; --good-bg:#e6f4ea; --warn:#9a6700; --warn-bg:#fff4d6; --bad:#c62828; --bad-bg:#fde8e8;
+  --accent:#2a78d6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --border:#33332f;
+    --text:#ffffff; --text-2:#c3c2b7; --muted:#8f8e86;
+    --s-ship:#3987e5; --s-visit:#d95926;
+    --good:#5cc27f; --good-bg:#16301f; --warn:#e0b14a; --warn-bg:#352a10; --bad:#ef7070; --bad-bg:#3a1a1a;
+    --accent:#3987e5;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --border:#33332f;
+  --text:#ffffff; --text-2:#c3c2b7; --muted:#8f8e86;
+  --s-ship:#3987e5; --s-visit:#d95926;
+  --good:#5cc27f; --good-bg:#16301f; --warn:#e0b14a; --warn-bg:#352a10; --bad:#ef7070; --bad-bg:#3a1a1a;
+  --accent:#3987e5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Pretendard','Malgun Gothic',system-ui,sans-serif;font-size:14px;line-height:1.5}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:19px}
+header .sub{color:var(--text-2);font-size:12.5px}
+.uploads{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn input{display:none}
+code{background:var(--surface-2);padding:1px 5px;border-radius:4px;font-size:12px}
+.status{font-size:12px;color:var(--text-2);padding:6px 24px;background:var(--surface-2);border-bottom:1px solid var(--border)}
+nav.tabs{display:flex;gap:4px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto}
+nav.tabs button{border:0;background:none;padding:12px 14px;font-size:14px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit}
+nav.tabs button.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+main{padding:20px 24px;max-width:1280px;margin:0 auto}
+.panel{display:none}.panel.on{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 12px}
+.card h3{font-size:14px;margin:16px 0 8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--text-2)}
+.kpi .v{font-size:24px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12px;color:var(--muted);margin-top:2px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.verdict{border-radius:12px;padding:18px 20px;margin-bottom:16px;border:1px solid var(--border)}
+.verdict .t{font-size:18px;font-weight:700;margin-bottom:6px}
+.verdict.good{background:var(--good-bg);border-color:var(--good)} .verdict.good .t{color:var(--good)}
+.verdict.warn{background:var(--warn-bg);border-color:var(--warn)} .verdict.warn .t{color:var(--warn)}
+.verdict.bad{background:var(--bad-bg);border-color:var(--bad)} .verdict.bad .t{color:var(--bad)}
+.verdict.idle{background:var(--surface)}
+.verdict ul{margin:6px 0 0;padding-left:20px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:7px 9px;border-bottom:1px solid var(--border);text-align:right;font-size:13px;white-space:nowrap}
+th{color:var(--text-2);font-weight:600;background:var(--surface-2)}
+td:first-child,th:first-child{text-align:left}
+.tw{overflow-x:auto}
+.pos{color:var(--good);font-weight:600}.neg{color:var(--bad);font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}main{padding:16px}header,nav.tabs{padding-left:16px;padding-right:16px}}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 16px}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--text-2)}
+.form input,.form select{padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:13.5px;font-family:inherit}
+.form .chk{flex-direction:row;align-items:center;gap:6px}
+.note{font-size:12.5px;color:var(--text-2);margin:8px 0 0}
+.chartbox{position:relative;height:280px}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600}
+.tag.ok{background:var(--good-bg);color:var(--good)}.tag.ng{background:var(--bad-bg);color:var(--bad)}.tag.wait{background:var(--surface-2);color:var(--text-2)}.tag.miss{background:var(--warn-bg);color:var(--warn)}
+.guide ol,.guide ul{padding-left:20px;margin:6px 0}
+.guide li{margin:3px 0}
+.formula{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-family:Consolas,monospace;font-size:12.5px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>톡이즈 방문설치 ROI</h1>
+    <div class="sub">택배 배송 vs 방문 설치 취소율 비교 · 테스트 ROI · 지역 전담인력 건당 비용</div>
+  </div>
+  <div class="uploads">
+    <button class="btn primary" id="btnDir">공용폴더 연결</button>
+    <button class="btn" id="btnReload" style="display:none">폴더 다시 읽기</button>
+    <label class="btn" title="폴더 연결이 안 되는 브라우저용">수동: 신청자관리<input type="file" id="fContract" accept=".xlsx,.xls" multiple></label>
+    <label class="btn">방문 대상자 엑셀 업로드<input type="file" id="fVisit" accept=".xlsx,.xls,.csv"></label>
+    <button class="btn" id="btnTpl">대상자 양식 받기</button>
+    <button class="btn" id="btnClear">데이터 초기화</button>
+  </div>
+</header>
+<div class="status" id="status">데이터 불러오는 중…</div>
+<nav class="tabs" id="tabs">
+  <button data-t="sum" class="on">① 결론</button>
+  <button data-t="cmp">② 취소율 비교</button>
+  <button data-t="roi">③ 테스트 ROI</button>
+  <button data-t="exp">④ 전담인력 확장</button>
+  <button data-t="guide">⑤ 테스트 설계</button>
+  <button data-t="log">⑥ 방문 대상자</button>
+</nav>
+<main>
+
+<!-- ① 결론 -->
+<section class="panel on" id="p-sum">
+  <div id="verdict"></div>
+  <div class="kpis" id="sumKpis"></div>
+  <div class="card"><h2>한 줄 요약 숫자</h2><div class="tw" id="sumTable"></div></div>
+</section>
+
+<!-- ② 취소율 비교 -->
+<section class="panel" id="p-cmp">
+  <div class="card">
+    <h2>비교 조건</h2>
+    <div class="form">
+      <label>관찰기간 (배송 후 N일 지난 건만 판정)<input type="number" data-k="obsDays" min="1"></label>
+      <label>대조군 기간 여유 (방문군 배송일 ±N일)<input type="number" data-k="padDays" min="0"></label>
+      <label>기준일 (비우면 파일 최신일)<input type="date" data-k="asOf"></label>
+      <label class="chk"><input type="checkbox" data-k="sameRegion"> 대조군을 방문군과 같은 권역으로 제한</label>
+    </div>
+    <p class="note">대조군 = 같은 기간 택배로만 배송된 톡이즈 계약. 연령 구성이 다르면 취소율도 달라지므로, <b>방문군의 연령 구성에 맞춰 대조군 취소율을 보정</b>한 값(연령보정 기대취소율)을 기준으로 씁니다.</p>
+  </div>
+  <div class="kpis" id="cmpKpis"></div>
+  <div class="grid2">
+    <div class="card"><h2>연령대별 취소율 — 택배 vs 방문</h2><div class="chartbox"><canvas id="cAge"></canvas></div></div>
+    <div class="card"><h2>반품까지 걸린 일수 (택배 전체)</h2><div class="chartbox"><canvas id="cDays"></canvas></div><p class="note">반품 대부분이 배송 직후에 발생합니다. 관찰기간을 정하는 근거입니다.</p></div>
+  </div>
+  <div class="card"><h2>연령대별 상세</h2><div class="tw" id="cmpTable"></div></div>
+  <div class="card"><h2>권역별 택배 취소율 (현재 기준선)</h2><div class="tw" id="regTable"></div></div>
+</section>
+
+<!-- ③ 테스트 ROI -->
+<section class="panel" id="p-roi">
+  <div class="card">
+    <h2>가정</h2>
+    <div class="form">
+      <label>취소 1건 방어 시 회사 이익 (원)<input type="number" data-k="profit" step="10000"></label>
+      <label>전화 학습케어 비용 (원/건)<input type="number" data-k="careCost" step="1000"></label>
+      <label class="chk"><input type="checkbox" data-k="careReplaced"> 방문설치가 전화 학습케어를 대체 (그만큼 비용 절감)</label>
+      <label>방문 1건 비용 (원) — 대상자 목록에 비용이 없을 때 사용<input type="number" data-k="visitCost" step="5000"></label>
+      <label>테스트 고정비 (준비·교육 등, 원)<input type="number" data-k="testFixed" step="10000"></label>
+    </div>
+    <p class="note">방문 1건 비용에는 기사 인건비(이동시간 포함), 교통·유류·통행료, 식대, 장비(공유기 점검 등)를 모두 넣어야 공정한 비교가 됩니다.</p>
+  </div>
+  <div class="kpis" id="roiKpis"></div>
+  <div class="card">
+    <h2>계산 과정</h2>
+    <div class="formula" id="roiFormula"></div>
+  </div>
+  <div class="card">
+    <h2>민감도 — 방문 1건당 순이익 (원)</h2>
+    <p class="note" style="margin-top:0">행 = 방문설치로 줄어드는 취소율(%p), 열 = 방문 1건 비용. 양수면 남는 장사입니다.</p>
+    <div class="tw" id="sensTable"></div>
+  </div>
+</section>
+
+<!-- ④ 전담인력 확장 -->
+<section class="panel" id="p-exp">
+  <div class="card">
+    <h2>확장 가정</h2>
+    <div class="form">
+      <label>방문설치 대상 연령<select data-k="expAge"><option value="0">전 연령</option><option value="60">60세 이상</option><option value="65">65세 이상</option><option value="70">70세 이상</option><option value="75">75세 이상</option><option value="80">80세 이상</option></select></label>
+      <label>대상 중 방문 실시 비율 (%)<input type="number" data-k="coverage" min="0" max="100"></label>
+      <label>취소 감소율 (상대, %) — 비우면 테스트 결과 사용<input type="number" data-k="relRed" placeholder="테스트 결과 사용"></label>
+      <label>설치기사 1인 월 급여 (원)<input type="number" data-k="salary" step="100000"></label>
+      <label>4대보험·퇴직충당 (급여 대비 %)<input type="number" data-k="burden"></label>
+      <label>차량·유류·통행료 (1인 월, 원)<input type="number" data-k="carCost" step="50000"></label>
+      <label>통신·장비·기타 (1인 월, 원)<input type="number" data-k="etcCost" step="10000"></label>
+      <label>1일 방문 가능 건수 — 수도권<input type="number" data-k="capMetro" step="0.5"></label>
+      <label>1일 방문 가능 건수 — 지방<input type="number" data-k="capLocal" step="0.5"></label>
+      <label>월 근무일<input type="number" data-k="workDays"></label>
+      <label>가동률 (%) — 일정 공백·재방문 감안<input type="number" data-k="util"></label>
+      <label>본사 관리·배차 고정비 (월, 원)<input type="number" data-k="hqCost" step="100000"></label>
+      <label>운영 방식<select data-k="expMode"><option value="inhouse">전 권역 직고용</option><option value="auto">권역별 직고용·외주 중 싼 쪽</option></select></label>
+      <label>외주(위탁) 방문 단가 (원/건) — 시장 견적 받아 입력<input type="number" data-k="outCost" step="5000"></label>
+    </div>
+    <p class="note">권역별 월 물량은 업로드한 신청자관리 파일(없으면 내장된 26년 6~9월 실측치)에서 계산합니다. 취소율은 권역별 표본이 작아 흔들리므로 <b>대상 연령 전체의 취소율</b>을 공통으로 씁니다.</p>
+  </div>
+  <div class="kpis" id="expKpis"></div>
+  <div class="card"><h2>권역별 운영안</h2><div class="tw" id="expTable"></div></div>
+  <div class="card"><h2>대상 연령을 어디까지 넓힐까</h2><p class="note" style="margin-top:0">연령이 높을수록 취소율이 높아 방문 1건의 가치가 커집니다. "목표 건당 비용"은 이 금액 이하로 운영해야 이익이 나는 상한선입니다.</p><div class="tw" id="ageTable"></div></div>
+</section>
+
+<!-- ⑤ 테스트 설계 -->
+<section class="panel guide" id="p-guide">
+  <div class="card">
+    <h2>30건 테스트로 무엇을 알 수 있나</h2>
+    <div id="sigBox"></div>
+  </div>
+  <div class="card">
+    <h2>테스트 운영 원칙 (기본안)</h2>
+    <ol>
+      <li><b>대상</b>: 75세 이상 신규 계약 고객. 취소율이 가장 높아 30건으로도 차이가 드러날 가능성이 크고, 장기 운영 시에도 ROI가 가장 좋은 구간입니다.</li>
+      <li><b>배정</b>: 상담원이 고르지 않습니다. 대상 고객 중 무작위(예: 주문키 끝자리 짝수)로 방문 제안. 상담원이 "잘 될 것 같은 고객"을 고르면 결과가 부풀려집니다.</li>
+      <li><b>거절자 기록</b>: 방문을 제안했는데 거절한 고객도 따로 기록(비고란). 거절자 취소율이 높다면 "방문 제안 자체"의 효과와 분리해서 봐야 합니다.</li>
+      <li><b>방문 시점</b>: 배송 당일~2일 내. 반품 대부분이 배송 후 7일 안에 일어나므로, 늦게 가면 방어할 기회가 사라집니다.</li>
+      <li><b>관찰기간</b>: 배송 후 14일(청약철회 기간). 마지막 방문 후 14일이 지나면 판정이 가능합니다.</li>
+      <li><b>비용 기록</b>: 방문마다 이동시간·설치시간·실비를 기록해야 장기 고용 시 1인 처리량과 건당 비용을 추정할 수 있습니다.</li>
+      <li><b>품질 기록</b>: 와이파이 연결·회원가입 완료 여부. "설치는 됐는데 취소"인 건은 사유를 비고에 적어둡니다.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h2>매일 할 일 (운영자)</h2>
+    <ol>
+      <li>CMS에서 <b>신청자관리 월간 파일</b>(테스트 기간이 걸친 월 전부)을 받아 <b>공용폴더</b>에 저장 (파일명 <code>신청자관리_yyyymm.xlsx</code> 그대로, 같은 월은 덮어쓰기)</li>
+      <li>대시보드를 열고 "공용폴더 다시 열기" 또는 "폴더 다시 읽기" 클릭 — 폴더 안 신청자관리 파일을 전부 새로 읽습니다</li>
+      <li>방문한 고객을 <b>⑥ 방문 대상자</b> 탭에서 직접 입력하거나, 양식 엑셀에 모아 "방문 대상자 엑셀 업로드" (주문키 또는 고객키만 있으면 됨, 나머지는 선택)</li>
+      <li>① 결론 탭 확인 — 관찰 완료 건수가 30건이 되면 판정이 나옵니다</li>
+    </ol>
+    <p class="note">고객명·전화번호는 저장하지 않으며, 모든 계산은 이 브라우저 안에서만 이뤄집니다.</p>
+  </div>
+</section>
+
+<!-- ⑥ 방문 기록 -->
+<section class="panel" id="p-log">
+  <div class="card">
+    <h2>방문 대상자 직접 입력</h2>
+    <div class="form">
+      <label>주문키 또는 고객키 *<input id="vKey" placeholder="CMS 신청자관리의 주문키/고객키"></label>
+      <label>방문일<input type="date" id="vDate"></label>
+      <label>설치담당<input id="vStaff"></label>
+      <label>방문비용 (원)<input type="number" id="vCost" step="5000"></label>
+      <label>이동시간 (분)<input type="number" id="vTravel"></label>
+      <label>설치시간 (분)<input type="number" id="vInstall"></label>
+      <label>와이파이 연결<select id="vWifi"><option value="">–</option><option>Y</option><option>N</option></select></label>
+      <label>회원가입 완료<select id="vSignup"><option value="">–</option><option>Y</option><option>N</option></select></label>
+      <label>비고<input id="vMemo"></label>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn primary" id="vAdd">추가</button>
+      <button class="btn" id="vExport">현재 목록 엑셀로 받기</button>
+    </div>
+    <p class="note">엑셀 업로드와 직접 입력은 한 목록으로 합쳐집니다. 같은 주문키를 다시 넣으면 내용이 갱신됩니다.</p>
+  </div>
+  <div class="card"><h2>방문설치 건별 현황</h2><div class="tw" id="logTable"></div></div>
+</section>
+</main>
+
+<script>
+// ================= 상수 =================
+const BANDS=[{k:0,l:'60세 미만'},{k:60,l:'60~64세'},{k:65,l:'65~69세'},{k:70,l:'70~74세'},{k:75,l:'75~79세'},{k:80,l:'80세 이상'}];
+const REGIONS=['수도권','부울경','대구경북','충청','호남','강원','제주'];
+const METRO=new Set(['수도권']);
+const SIDO_REGION={서울:'수도권',서울특별시:'수도권',경기:'수도권',경기도:'수도권',인천:'수도권',인천광역시:'수도권',
+  부산:'부울경',부산광역시:'부울경',울산:'부울경',울산광역시:'부울경',경남:'부울경',경상남도:'부울경',
+  대구:'대구경북',대구광역시:'대구경북',경북:'대구경북',경상북도:'대구경북',
+  대전:'충청',대전광역시:'충청',세종:'충청',세종특별자치시:'충청',충남:'충청',충청남도:'충청',충북:'충청',충청북도:'충청',
+  광주:'호남',광주광역시:'호남',전남:'호남',전라남도:'호남',전남광주통합특별시:'호남',전북:'호남',전라북도:'호남',전북특별자치도:'호남',
+  강원:'강원',강원도:'강원',강원특별자치도:'강원',제주:'제주',제주도:'제주',제주특별자치도:'제주'};
+// 신청자관리 컬럼 (헤더명 우선, 없으면 인덱스)
+const CT={orderKey:['주문키',2],custKey:['고객키',3],manager:['담당자',13],apply:['신청일',15],pkg:['패키지명',18],
+  amount:['결제금액',34],ship:['배송일',36],addr:['주소',38],refund:['환불완료일',40],ret:['반품일',42],
+  term:['철회/해지 구분',62],birth:['신용정보조회생년월일(계약자)',55],ageTxt:['통화연령층',67],brand:['브랜드명',71]};
+// 파일 미업로드 시 기준선: 2026년 6~9월 톡이즈 계약 실측 (권역|연령대 → [계약, 반품])
+const BASE={months:4,label:'내장 기준선 (26년 6~9월 실측)',data:{"수도권|0":[146,6],"제주|75":[5,1],"부울경|60":[45,4],"수도권|70":[347,33],"수도권|65":[317,28],"호남|65":[52,4],"수도권|60":[151,11],"수도권|75":[306,52],"대구경북|70":[43,1],"부울경|65":[92,12],"충청|70":[61,4],"부울경|75":[65,9],"부울경|70":[84,14],"수도권|80":[258,47],"충청|65":[72,6],"호남|0":[27,0],"부울경|80":[51,12],"충청|80":[40,9],"충청|75":[45,5],"제주|0":[7,0],"호남|80":[31,7],"강원|75":[8,2],"대구경북|80":[30,6],"부울경|0":[43,2],"강원|65":[26,2],"호남|70":[44,6],"호남|75":[36,9],"충청|0":[38,3],"충청|60":[37,2],"대구경북|75":[24,4],"대구경북|65":[46,2],"제주|70":[10,1],"대구경북|0":[26,3],"호남|60":[28,3],"대구경북|60":[26,1],"강원|70":[22,1],"강원|80":[14,4],"강원|0":[8,0],"강원|60":[9,1],"제주|60":[5,0],"제주|65":[5,2],"제주|80":[5,0]}};
+const DEFAULTS={obsDays:14,padDays:30,asOf:'',sameRegion:false,
+  profit:1000000,careCost:20000,careReplaced:true,visitCost:80000,testFixed:0,
+  expAge:'75',coverage:100,relRed:'',salary:3000000,burden:20,carCost:700000,etcCost:100000,
+  capMetro:5,capLocal:3.5,workDays:21,util:80,hqCost:0,outCost:60000,expMode:"inhouse"};
+const LS_KEY='talkisVisit.settings';
+let S={...DEFAULTS};
+try{Object.assign(S,JSON.parse(localStorage.getItem(LS_KEY)||'{}'))}catch(e){}
+
+let contracts=[];   // 톡이즈 계약 (개인정보 제외)
+let visits=[];      // 방문설치 기록
+let charts={};
+
+// ================= 유틸 =================
+const $=id=>document.getElementById(id);
+const DAY=864e5;
+function toDate(v){
+  if(v==null||v==='')return null;
+  if(v instanceof Date)return isNaN(v)?null:new Date(v.getFullYear(),v.getMonth(),v.getDate());
+  if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?new Date(d.y,d.m-1,d.d):null}
+  const m=String(v).trim().match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  return m?new Date(+m[1],+m[2]-1,+m[3]):null;
+}
+const ymd=d=>d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
+const pct=(x,dg=1)=>x==null||isNaN(x)?'–':(x*100).toFixed(dg)+'%';
+const pp=x=>x==null||isNaN(x)?'–':(x>=0?'':'−')+Math.abs(x*100).toFixed(1)+'%p';
+const won=x=>x==null||isNaN(x)?'–':(x<0?'−':'')+Math.round(Math.abs(x)).toLocaleString('ko-KR')+'원';
+const man=x=>{if(x==null||isNaN(x))return'–';const a=Math.abs(x),s=x<0?'−':'';return a>=1e8?s+(a/1e8).toFixed(2)+'억':s+(a/1e4).toLocaleString('ko-KR',{maximumFractionDigits:1})+'만'};
+const num=x=>x==null||isNaN(x)?'–':Math.round(x).toLocaleString('ko-KR');
+const cls=x=>x>0?'pos':x<0?'neg':'';
+const bandOf=a=>a==null?0:a>=80?80:a>=75?75:a>=70?70:a>=65?65:a>=60?60:0;
+const bandLabel=k=>BANDS.find(b=>b.k===k).l;
+const regionOf=addr=>SIDO_REGION[String(addr||'').trim().split(/\s+/)[0]]||'기타';
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function setStatus(t){$('status').textContent=t}
+
+// 통계: 이항 누적확률 P(X<=k | n,p), Wilson 95% 신뢰구간
+function lnC(n,k){let s=0;for(let i=1;i<=k;i++)s+=Math.log(n-k+i)-Math.log(i);return s}
+function binomCdf(k,n,p){if(p<=0)return 1;if(p>=1)return k>=n?1:0;let s=0;for(let i=0;i<=k;i++)s+=Math.exp(lnC(n,i)+i*Math.log(p)+(n-i)*Math.log(1-p));return Math.min(1,s)}
+function wilson(x,n){if(!n)return[null,null];const z=1.96,p=x/n,d=1+z*z/n,c=p+z*z/(2*n),h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n));return[(c-h)/d,(c+h)/d]}
+
+// ================= IndexedDB =================
+const DB_NAME='talkisVisit';
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function kvSet(k,v){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+async function kvGet(k){const db=await idb();return new Promise((res,rej)=>{const r=db.transaction('kv').objectStore('kv').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+
+// ================= 파일 읽기 =================
+function readRows(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});res(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:true}))}catch(err){rej(err)}};fr.onerror=rej;fr.readAsArrayBuffer(file)})}
+function colMap(header,spec){const m={};const h=header.map(x=>String(x).trim());for(const[k,[name,idx]]of Object.entries(spec)){const i=h.indexOf(name);m[k]=i>=0?i:idx}return m}
+
+function parseContracts(rows){
+  const c=colMap(rows[0],CT);const out=[];
+  for(const r of rows.slice(1)){
+    if(String(r[c.brand]).trim()!=='톡이즈')continue;
+    const ok=String(r[c.orderKey]).trim();if(!ok)continue;
+    const apply=toDate(r[c.apply]);
+    let age=null;const b=String(r[c.birth]).replace(/\D/g,'');
+    if(b.length>=8&&apply){const by=+b.slice(0,4),bm=+b.slice(4,6),bd=+b.slice(6,8);age=apply.getFullYear()-by-((apply.getMonth()+1<bm||(apply.getMonth()+1===bm&&apply.getDate()<bd))?1:0)}
+    else{const t=String(r[c.ageTxt]).match(/(\d+)/);if(t)age=+t[1]}
+    const ret=toDate(r[c.ret]);
+    out.push({ok,ck:String(r[c.custKey]).trim(),mgr:String(r[c.manager]).trim(),pkg:String(r[c.pkg]).trim(),
+      apply:ymd(apply),ship:ymd(toDate(r[c.ship])),ret:ymd(ret),term:String(r[c.term]).trim(),
+      age,region:regionOf(r[c.addr]),amt:+r[c.amount]||0});
+  }
+  return out;
+}
+function findCol(h,keys){return h.findIndex(x=>keys.some(k=>x.includes(k)))}
+function parseVisits(rows){
+  const h=rows[0].map(x=>String(x).replace(/\s/g,''));
+  const ix={ok:findCol(h,['주문키']),ck:findCol(h,['고객키']),date:findCol(h,['방문일']),staff:findCol(h,['설치담당','기사','담당']),
+    travel:findCol(h,['이동']),install:findCol(h,['설치시간','소요']),cost:findCol(h,['비용']),wifi:findCol(h,['와이파이','wifi','WIFI']),
+    signup:findCol(h,['회원가입']),memo:findCol(h,['비고','메모'])};
+  if(ix.ok<0&&ix.ck<0)throw new Error('방문 기록 파일에 "주문키" 또는 "고객키" 열이 없습니다.');
+  const g=(r,i)=>i>=0?r[i]:'';
+  return rows.slice(1).map(r=>({ok:String(g(r,ix.ok)).trim(),ck:String(g(r,ix.ck)).trim(),date:ymd(toDate(g(r,ix.date))),staff:String(g(r,ix.staff)).trim(),
+    travel:+g(r,ix.travel)||0,install:+g(r,ix.install)||0,cost:+g(r,ix.cost)||0,
+    wifi:String(g(r,ix.wifi)).trim().toUpperCase(),signup:String(g(r,ix.signup)).trim().toUpperCase(),memo:String(g(r,ix.memo)).trim()}))
+    .filter(v=>v.ok||v.ck);
+}
+
+// 신청자관리 파일 반영. replace=true면 기존 데이터를 버리고 이 파일들로 새로 구성(공용폴더 모드)
+async function ingestContracts(files,replace){
+  const map=new Map(replace?[]:contracts.map(c=>[c.ok,c]));
+  // 파일명 순으로 읽어 최신 월 파일이 덮어쓰도록
+  for(const f of files.sort((a,b)=>a.name.localeCompare(b.name))){const rows=await readRows(f);for(const c of parseContracts(rows))map.set(c.ok,c)}
+  contracts=[...map.values()];await kvSet('contracts',contracts);
+  const names=files.map(f=>f.name);
+  await kvSet('contractFiles',replace?names:[...new Set([...(await kvGet('contractFiles')||[]),...names])]);
+}
+// 방문 대상자: 엑셀 업로드와 수기 입력을 한 목록으로 관리. 같은 키(주문키→고객키)는 나중 값으로 덮어씀
+const vKey=v=>v.ok||v.ck;
+async function saveVisits(){await kvSet('visits',visits)}
+async function upsertVisits(list){
+  const map=new Map(visits.map(v=>[vKey(v),v]));
+  for(const v of list)map.set(vKey(v),{...map.get(vKey(v)),...v});
+  visits=[...map.values()];await saveVisits();
+}
+async function ingestVisits(f){const list=parseVisits(await readRows(f));await upsertVisits(list);await kvSet('visitFile',f.name);return list.length}
+$('fContract').onchange=async e=>{
+  const files=[...e.target.files];if(!files.length)return;
+  setStatus('신청자관리 파일 읽는 중…');
+  try{await ingestContracts(files,false);render()}catch(err){setStatus('읽기 실패: '+err.message)}
+  e.target.value='';
+};
+$('fVisit').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{const n=await ingestVisits(f);render();setStatus(`방문 대상자 ${n}건 반영 · 전체 ${visits.length}건`)}catch(err){setStatus('방문 대상자 파일 읽기 실패: '+err.message)}
+  e.target.value='';
+};
+
+// ================= 공용폴더 연결 =================
+// 폴더 안(하위 1단계 포함)의 신청자관리_*.xlsx 전부를 읽어 계약 데이터를 새로 구성한다.
+// 폴더 핸들은 IndexedDB에 저장 → 다음 접속 시 "허용" 한 번으로 자동 재로딩.
+const CONTRACT_RE=/^신청자관리_\d{4,8}\.xlsx?$/;
+let dirHandle=null;
+async function scanDir(dir,depth=0,out=[]){
+  for await(const [name,h] of dir.entries()){
+    if(name.startsWith('~$'))continue; // 엑셀 임시파일
+    if(h.kind==='directory'){if(depth<1)await scanDir(h,depth+1,out);continue}
+    if(CONTRACT_RE.test(name))out.push(await h.getFile());
+  }
+  return out;
+}
+async function loadFolder(){
+  setStatus(`공용폴더 "${dirHandle.name}" 읽는 중…`);
+  try{
+    const files=await scanDir(dirHandle);
+    if(!files.length){setStatus(`"${dirHandle.name}" 폴더에 신청자관리_yyyymm.xlsx 파일이 없습니다.`);return}
+    await ingestContracts(files,true);
+    $('btnReload').style.display='';$('btnDir').textContent='공용폴더 변경';
+    render();
+  }catch(err){setStatus('폴더 읽기 실패: '+err.message)}
+}
+$('btnDir').onclick=async()=>{
+  if(!window.showDirectoryPicker){alert('이 브라우저는 폴더 연결을 지원하지 않습니다. Chrome 또는 Edge를 쓰거나, 수동 업로드 버튼을 사용하세요.');return}
+  // 저장된 폴더가 있고 권한만 끊긴 상태면 재허용, 아니면 새로 고르기
+  if(dirHandle&&$('btnDir').dataset.reauth){
+    if(await dirHandle.requestPermission({mode:'read'})==='granted'){delete $('btnDir').dataset.reauth;return loadFolder()}
+  }
+  try{dirHandle=await showDirectoryPicker({id:'talkisVisit',mode:'read'})}catch(e){return}
+  delete $('btnDir').dataset.reauth;
+  try{await kvSet('dirHandle',dirHandle)}catch(e){}
+  loadFolder();
+};
+$('btnReload').onclick=async()=>{
+  if(dirHandle&&await dirHandle.requestPermission({mode:'read'})==='granted')loadFolder();
+};
+$('btnClear').onclick=async()=>{
+  if(!confirm('업로드한 계약·방문 데이터를 모두 지웁니다. (가정값은 유지)'))return;
+  contracts=[];visits=[];await kvSet('contracts',[]);await kvSet('visits',[]);await kvSet('contractFiles',[]);await kvSet('visitFile','');render();refreshStatus();
+};
+$('btnTpl').onclick=()=>{
+  downloadVisits([['예: 1788170441450tbcf1uO','','2026-10-15','홍길동',40,50,85000,'Y','Y','주문키 또는 고객키 중 하나만 있어도 됨']],'톡이즈_방문설치대상자_양식.xlsx');
+};
+const VISIT_HEAD=['주문키','고객키','방문일','설치담당','이동시간(분)','설치시간(분)','방문비용(원)','와이파이연결(Y/N)','회원가입완료(Y/N)','비고'];
+function downloadVisits(rows,name){
+  const aoa=[VISIT_HEAD,...rows];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=VISIT_HEAD.map((_,i)=>({wch:i<2?24:14}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'방문설치대상자');XLSX.writeFile(wb,name);
+}
+// 수기 입력
+$('vAdd').onclick=async()=>{
+  const key=$('vKey').value.trim();if(!key){alert('주문키 또는 고객키를 입력하세요.');return}
+  // CMS 주문키/고객키 어느 쪽이든 매칭되도록 양쪽에 넣는다
+  await upsertVisits([{ok:key,ck:key,date:$('vDate').value,staff:$('vStaff').value.trim(),travel:+$('vTravel').value||0,install:+$('vInstall').value||0,
+    cost:+$('vCost').value||0,wifi:$('vWifi').value,signup:$('vSignup').value,memo:$('vMemo').value.trim()}]);
+  ['vKey','vTravel','vInstall','vMemo'].forEach(id=>$(id).value='');
+  render();setStatus(`방문 대상자 추가 · 전체 ${visits.length}건`);
+};
+$('vExport').onclick=()=>{
+  if(!visits.length){alert('저장된 방문 대상자가 없습니다.');return}
+  downloadVisits(visits.map(v=>[v.ok===v.ck?v.ok:v.ok,v.ok===v.ck?'':v.ck,v.date,v.staff,v.travel||'',v.install||'',v.cost||'',v.wifi,v.signup,v.memo]),`톡이즈_방문설치대상자_${ymd(new Date())}.xlsx`);
+};
+async function removeVisit(key){
+  if(!confirm('이 방문 대상자를 목록에서 뺄까요?'))return;
+  visits=visits.filter(v=>vKey(v)!==key);await saveVisits();render();
+}
+async function refreshStatus(){
+  if($('btnDir').dataset.reauth)return; // 재허용 안내 문구 유지
+  const cf=await kvGet('contractFiles')||[];
+  setStatus(`${dirHandle?'공용폴더 "'+dirHandle.name+'"  |  ':''}계약: ${cf.length?cf.length+'개 파일 · 톡이즈 '+contracts.length.toLocaleString()+'건':'미연결 (기준선은 내장 실측치 사용)'}  |  방문 대상자: ${visits.length}건  |  기준일 ${ymd(asOfDate())||'–'}`);
+}
+
+// ================= 설정 바인딩 =================
+function bindInputs(){
+  document.querySelectorAll('[data-k]').forEach(el=>{
+    const k=el.dataset.k;
+    if(el.type==='checkbox')el.checked=!!S[k];else el.value=S[k];
+    el.addEventListener(el.tagName==='SELECT'||el.type==='checkbox'?'change':'input',()=>{
+      S[k]=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?'':+el.value):el.value;
+      try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}
+      render();
+    });
+  });
+}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+b.dataset.t));
+  try{localStorage.setItem('talkisVisit.tab',b.dataset.t)}catch(e){}
+});
+
+// ================= 핵심 계산 =================
+function asOfDate(){
+  if(S.asOf)return toDate(S.asOf);
+  let m=null;for(const c of contracts)for(const d of[c.apply,c.ship,c.ret])if(d&&(!m||d>m))m=d;
+  return m?toDate(m):null;
+}
+function analyze(){
+  const asOf=asOfDate(),obs=+S.obsDays||14;
+  const matured=c=>c.ship&&asOf&&(asOf-toDate(c.ship))/DAY>=obs;
+  const byOk=new Map(contracts.map(c=>[c.ok,c])),byCk=new Map(contracts.map(c=>[c.ck,c]));
+  const vRows=visits.map(v=>{const c=(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))||null;
+    const st=!c?'miss':!matured(c)?(c.ret?'ng':'wait'):(c.ret?'ng':'ok');return{v,c,st}});
+  const vKeys=new Set(vRows.filter(x=>x.c).map(x=>x.c.ok));
+  const V=vRows.filter(x=>x.c&&matured(x.c)).map(x=>x.c);
+  // 대조군
+  let pool=contracts.filter(c=>!vKeys.has(c.ok)&&matured(c));
+  if(V.length){
+    const sh=V.map(c=>toDate(c.ship).getTime()),pad=(+S.padDays||0)*DAY,lo=Math.min(...sh)-pad,hi=Math.max(...sh)+pad;
+    pool=pool.filter(c=>{const t=toDate(c.ship).getTime();return t>=lo&&t<=hi});
+    if(S.sameRegion){const rs=new Set(V.map(c=>c.region));pool=pool.filter(c=>rs.has(c.region))}
+  }
+  const cnt=arr=>{const o={};for(const b of BANDS)o[b.k]={n:0,r:0};for(const c of arr){const k=bandOf(c.age);o[k].n++;if(c.ret)o[k].r++}return o};
+  const vb=cnt(V),cb=cnt(pool);
+  const cN=pool.length,cR=pool.filter(c=>c.ret).length,cRate=cN?cR/cN:null;
+  const vN=V.length,vR=V.filter(c=>c.ret).length,vRate=vN?vR/vN:null;
+  // 연령보정 기대취소율
+  let exp=null;
+  if(vN&&cN){let s=0;for(const b of BANDS){const n=vb[b.k].n;if(!n)continue;const cbn=cb[b.k];s+=n*(cbn.n>=20?cbn.r/cbn.n:cRate)}exp=s/vN}
+  const p=vN&&exp?binomCdf(vR,vN,exp):null;
+  return{asOf,obs,vRows,V,pool,vb,cb,cN,cR,cRate,vN,vR,vRate,exp,p,ci:wilson(vR,vN),
+    waiting:vRows.filter(x=>x.st==='wait'||(x.c&&!matured(x.c))).length,missing:vRows.filter(x=>x.st==='miss').length};
+}
+function roiCalc(A){
+  const base=A.exp,d=base!=null&&A.vRate!=null?base-A.vRate:null,n=A.vN;
+  const costs=A.vRows.filter(x=>x.c&&A.V.includes(x.c)).map(x=>x.v.cost);
+  const hasCost=costs.length&&costs.every(x=>x>0);
+  const perVisit=hasCost?costs.reduce((a,b)=>a+b,0)/costs.length:+S.visitCost;
+  const care=S.careReplaced?+S.careCost:0;
+  const defended=d!=null?d*n:null;
+  const gain=defended!=null?defended*S.profit:null;
+  const saving=care*n, cost=perVisit*n+(+S.testFixed||0);
+  const net=gain!=null?gain+saving-cost:null;
+  const be=d!=null?d*S.profit+care:null; // 손익분기 방문단가
+  return{d,n,perVisit,hasCost,care,defended,gain,saving,cost,net,roi:net!=null&&cost?net/cost:null,be,relRed:base&&d!=null?d/base:null};
+}
+// 권역×연령 기준선 (업로드 데이터 우선)
+function baseline(){
+  const asOf=asOfDate(),obs=+S.obsDays||14;
+  const cs=contracts.filter(c=>c.ship&&asOf&&(asOf-toDate(c.ship))/DAY>=obs);
+  if(cs.length<200)return BASE;
+  const ap=cs.map(c=>toDate(c.apply||c.ship).getTime());
+  const months=Math.max(1,(Math.max(...ap)-Math.min(...ap))/DAY/30.44);
+  const data={};for(const c of cs){const k=c.region+'|'+bandOf(c.age);const o=data[k]??=[0,0];o[0]++;if(c.ret)o[1]++}
+  return{months,label:`업로드 데이터 (${months.toFixed(1)}개월분)`,data};
+}
+function segStats(B,minAge,region){
+  let n=0,r=0;for(const[k,[a,b]]of Object.entries(B.data)){const[rg,bd]=k.split('|');if(+bd<minAge)continue;if(region&&rg!==region)continue;n+=a;r+=b}
+  return{n,r,rate:n?r/n:null,monthly:n/B.months};
+}
+function expansion(A,R,minAge){
+  const B=baseline(),seg=segStats(B,minAge);
+  const rel=S.relRed!==''&&S.relRed!=null?+S.relRed/100:(R.relRed!=null?Math.max(0,R.relRed):0.5);
+  const care=S.careReplaced?+S.careCost:0;
+  const valuePerVisit=seg.rate*rel*S.profit+care; // = 손익분기 건당 비용
+  const perHead=S.salary*(1+S.burden/100)+(+S.carCost)+(+S.etcCost);
+  const rows=REGIONS.map(rg=>{
+    const st=segStats(B,minAge,rg),vol=st.monthly*S.coverage/100;
+    const cap=(METRO.has(rg)?S.capMetro:S.capLocal)*S.workDays*S.util/100;
+    const heads=vol>0?Math.ceil(vol/cap):0;
+    const inCost=heads*perHead,inPer=vol?inCost/vol:null,outTot=vol*S.outCost;
+    const mode=vol===0?'-':(S.expMode==='auto'&&outTot<inCost)?'외주':'직고용';
+    const cost=mode==='직고용'?inCost:outTot;
+    const defended=vol*seg.rate*rel;
+    return{rg,vol,rawRate:st.rate,heads,cap,inCost,inPer,outTot,mode,cost,defended,net:defended*S.profit+vol*care-cost};
+  });
+  const tot=rows.reduce((a,x)=>({vol:a.vol+x.vol,heads:a.heads+(x.mode==='직고용'?x.heads:0),cost:a.cost+x.cost,defended:a.defended+x.defended,net:a.net+x.net}),{vol:0,heads:0,cost:0,defended:0,net:0});
+  tot.cost+=+S.hqCost||0;tot.net-=+S.hqCost||0;
+  return{B,seg,rel,care,valuePerVisit,perHead,rows,tot,perVisit:tot.vol?tot.cost/tot.vol:null,
+    beVisitsPerHead:valuePerVisit>0?perHead/valuePerVisit:null};
+}
+
+// ================= 렌더링 =================
+function kpi(l,v,d,dotVar){return`<div class="kpi"><div class="l">${dotVar?`<span class="dot" style="background:var(${dotVar})"></span>`:''}${l}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`}
+function render(){
+  const A=analyze(),R=roiCalc(A),E=expansion(A,R,+S.expAge);
+  renderSummary(A,R,E);renderCompare(A);renderRoi(A,R);renderExp(A,R,E);renderGuide(A,E);renderLog(A);
+  refreshStatus();
+}
+function renderSummary(A,R,E){
+  let cls='idle',t,items=[];
+  const B=E.B,seg75=segStats(B,75);
+  if(!visits.length){
+    t='방문설치 테스트 데이터 대기 중';
+    items=[`현재 택배 기준선: 톡이즈 전체 반품률 <b>${pct(segStats(B,0).rate)}</b>, 75세 이상 <b>${pct(seg75.rate)}</b> (${B.label})`,
+      `75세 이상 고객의 취소를 절반 줄인다고 가정하면, 방문 1건이 <b>${won(seg75.rate*0.5*S.profit+(S.careReplaced?S.careCost:0))}</b> 이하일 때 이익`,
+      `상단 "기록 양식 받기"로 방문 기록을 쌓고, 신청자관리 월간 파일과 함께 올리면 판정이 시작됩니다.`];
+  }else if(A.vN<30){
+    cls='warn';t=`관찰 중 — 판정 가능 ${A.vN}건 / 목표 30건`;
+    items=[`관찰기간(배송 후 ${A.obs}일)이 지나지 않은 건 ${A.waiting}건, 계약 파일에서 못 찾은 건 ${A.missing}건`,
+      A.vN?`현재까지 방문군 취소율 ${pct(A.vRate)} vs 연령보정 기대취소율 ${pct(A.exp)} (참고용, 표본 부족)`:'아직 판정 가능한 건이 없습니다.'];
+  }else{
+    const eff=R.d>0;
+    if(eff&&A.p<0.05){cls='good';t='효과 확인 — 방문설치가 취소를 줄였습니다'}
+    else if(eff&&A.p<0.2){cls='warn';t='방향성 있음 — 표본을 늘려 재확인 필요'}
+    else{cls='bad';t='효과 미확인 — 택배 대비 취소율 차이가 없습니다'}
+    items=[`방문군 취소율 <b>${pct(A.vRate)}</b> (${A.vR}/${A.vN}건) vs 택배 연령보정 기대 <b>${pct(A.exp)}</b> → 차이 <b>${pp(R.d)}</b> (우연일 확률 ${pct(A.p,1)})`,
+      `테스트 순이익 <b>${won(R.net)}</b> · ROI <b>${pct(R.roi,0)}</b> · 손익분기 방문단가 <b>${won(R.be)}</b> (실제 ${won(R.perVisit)})`,
+      `전담인력 확장 시(${E.seg?bandLabelMin(+S.expAge):''}): 건당 비용 <b>${won(E.perVisit)}</b> / 목표 상한 <b>${won(E.valuePerVisit)}</b> · 월 순이익 <b>${man(E.tot.net)}원</b>`];
+  }
+  $('verdict').innerHTML=`<div class="verdict ${cls}"><div class="t">${t}</div><ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  $('sumKpis').innerHTML=
+    kpi('택배 취소율 (연령보정)',A.exp!=null?pct(A.exp):pct(segStats(B,0).rate),A.exp!=null?`대조군 ${num(A.cN)}건`:'방문군 없음 · 전체 기준선','--s-ship')+
+    kpi('방문설치 취소율',A.vN?pct(A.vRate):'–',A.vN?`${A.vR}/${A.vN}건 · 95% 범위 ${pct(A.ci[0],0)}~${pct(A.ci[1],0)}`:'판정 가능 건 없음','--s-visit')+
+    kpi('취소 방어 (건)',R.defended!=null?R.defended.toFixed(1):'–',R.defended!=null?`방어 이익 ${man(R.gain)}원`:'')+
+    kpi('테스트 ROI',pct(R.roi,0),R.net!=null?`순이익 ${won(R.net)}`:'')+
+    kpi('목표 건당 비용 (확장)',won(E.valuePerVisit),`${bandLabelMin(+S.expAge)} · 감소율 ${pct(E.rel,0)} 가정`)+
+    kpi('확장 시 건당 비용',won(E.perVisit),`월 ${num(E.tot.vol)}건 · 직고용 ${E.tot.heads}명`);
+  const row=(a,b,c)=>`<tr><td>${a}</td><td>${b}</td><td style="text-align:left;color:var(--text-2)">${c}</td></tr>`;
+  $('sumTable').innerHTML=`<table><tr><th>항목</th><th>값</th><th style="text-align:left">의미</th></tr>
+    ${row('취소 1건 방어 이익',won(S.profit),'고정 가정')}
+    ${row('전화 학습케어 비용',won(S.careCost),S.careReplaced?'방문이 대체 → 절감액으로 반영':'대체하지 않음 → 반영 안 함')}
+    ${row('손익분기 방문단가 (테스트)',won(R.be),'= 줄어든 취소율 × 100만 + 학습케어 절감')}
+    ${row('1인 월 손익분기 처리건수',E.beVisitsPerHead?E.beVisitsPerHead.toFixed(0)+'건':'–',`설치기사 1인 월 비용 ${won(E.perHead)} ÷ 목표 건당 비용`)}
+    ${row('확장 연 순이익',man(E.tot.net*12)+'원',`${bandLabelMin(+S.expAge)} 대상, 방문 비율 ${S.coverage}%`)}</table>`;
+}
+const bandLabelMin=a=>a?`${a}세 이상`:'전 연령';
+
+function mkChart(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),cfg)}
+function chartBase(){
+  const tx=css('--text-2'),gr=css('--border');
+  return{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:tx,boxWidth:10,boxHeight:10,useBorderRadius:true,borderRadius:5}},tooltip:{}},
+    scales:{x:{ticks:{color:tx},grid:{display:false}},y:{beginAtZero:true,ticks:{color:tx},grid:{color:gr},border:{display:false}}}};
+}
+function renderCompare(A){
+  const useBase=!contracts.length;const B=baseline();
+  const rateOf=o=>o.n?o.r/o.n:null;
+  let shipRates,visitRates=null,shipN;
+  if(useBase){shipRates=BANDS.map(b=>rateOf(segBand(B,b.k)));shipN=BANDS.map(b=>segBand(B,b.k).n)}
+  else{const src=A.vN?A.cb:(()=>{const o={};for(const b of BANDS)o[b.k]={n:0,r:0};for(const c of contracts.filter(c=>c.ship&&A.asOf&&(A.asOf-toDate(c.ship))/DAY>=A.obs)){const k=bandOf(c.age);o[k].n++;if(c.ret)o[k].r++}return o})();
+    shipRates=BANDS.map(b=>rateOf(src[b.k]));shipN=BANDS.map(b=>src[b.k].n);if(A.vN)visitRates=BANDS.map(b=>rateOf(A.vb[b.k]))}
+  $('cmpKpis').innerHTML=
+    kpi('택배 대조군',A.vN?pct(A.cRate):'–',A.vN?`${num(A.cR)}/${num(A.cN)}건 (보정 전)`:'방문군이 생기면 계산','--s-ship')+
+    kpi('연령보정 기대취소율',pct(A.exp),'방문군 연령 구성 기준','--s-ship')+
+    kpi('방문설치군',pct(A.vRate),A.vN?`${A.vR}/${A.vN}건`:'','--s-visit')+
+    kpi('차이',pp(A.exp!=null&&A.vRate!=null?A.exp-A.vRate:null),A.p!=null?`우연일 확률 ${pct(A.p,1)} (단측 이항검정)`:'');
+  const pctTick={callback:v=>(v*100).toFixed(0)+'%'};
+  const ds=[{label:'택배',data:shipRates,backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:28}];
+  if(visitRates)ds.push({label:'방문설치',data:visitRates,backgroundColor:css('--s-visit'),borderRadius:4,maxBarThickness:28});
+  const o1=chartBase();o1.scales.y.ticks={...o1.scales.y.ticks,...pctTick};o1.plugins.tooltip={callbacks:{label:c=>`${c.dataset.label} ${pct(c.raw)}`}};
+  if(!visitRates)o1.plugins.legend.display=false;
+  mkChart('cAge',{type:'bar',data:{labels:BANDS.map(b=>b.l),datasets:ds},options:o1});
+  // 반품 경과일
+  const bins=[['0~3일',0,3],['4~7일',4,7],['8~14일',8,14],['15~30일',15,30],['31일+',31,1e9]];
+  const counts=bins.map(()=>0);
+  for(const c of contracts)if(c.ret&&c.ship){const d=Math.round((toDate(c.ret)-toDate(c.ship))/DAY);const i=bins.findIndex(b=>d>=b[1]&&d<=b[2]);if(i>=0)counts[i]++}
+  const known=contracts.length?counts:[null,375,42,14,0]; // 미업로드: 3~9월 실측 (0~7일 375건)
+  const labels=contracts.length?bins.map(b=>b[0]):['0~3일','0~7일','8~14일','15~30일','31일+'];
+  const o2=chartBase();o2.plugins.legend.display=false;o2.plugins.tooltip={callbacks:{label:c=>`${num(c.raw)}건`}};
+  mkChart('cDays',{type:'bar',data:{labels,datasets:[{label:'반품 건수',data:known,backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:36}]},options:o2});
+  // 표
+  $('cmpTable').innerHTML=`<table><tr><th>연령대</th><th>택배 건수</th><th>택배 취소율</th><th>방문 건수</th><th>방문 취소</th><th>방문 취소율</th><th>차이</th></tr>${BANDS.map((b,i)=>{
+    const vn=A.vb[b.k].n,vr=A.vb[b.k].r,vrt=vn?vr/vn:null,diff=vrt!=null&&shipRates[i]!=null?shipRates[i]-vrt:null;
+    return`<tr><td>${b.l}</td><td>${num(shipN[i])}</td><td>${pct(shipRates[i])}</td><td>${vn||'–'}</td><td>${vn?vr:'–'}</td><td>${pct(vrt)}</td><td class="${cls(diff)}">${pp(diff)}</td></tr>`}).join('')}</table>
+    ${useBase?`<p class="note">신청자관리 파일 미업로드 — ${B.label} 기준으로 표시 중</p>`:''}`;
+  $('regTable').innerHTML=`<table><tr><th>권역</th><th>월 평균 계약</th><th>전체 취소율</th><th>75세 이상 월 계약</th><th>75세 이상 취소율</th></tr>${REGIONS.map(rg=>{const a=segStats(B,0,rg),b=segStats(B,75,rg);
+    return`<tr><td>${rg}</td><td>${a.monthly.toFixed(0)}</td><td>${pct(a.rate)}</td><td>${b.monthly.toFixed(0)}</td><td>${pct(b.rate)}${b.n<60?' <span style="color:var(--muted)">(표본 적음)</span>':''}</td></tr>`}).join('')}</table><p class="note">${B.label} · 반품일(AQ) 기준. 배송 전 취소(월간 파일에서 행이 사라지는 건)는 방문설치 전에 일어나므로 비교에서 빠져도 무방합니다.</p>`;
+}
+function segBand(B,k){let n=0,r=0;for(const[key,[a,b]]of Object.entries(B.data)){if(+key.split('|')[1]===k){n+=a;r+=b}}return{n,r}}
+
+function renderRoi(A,R){
+  $('roiKpis').innerHTML=
+    kpi('줄어든 취소율',pp(R.d),R.relRed!=null?`상대 ${pct(R.relRed,0)} 감소`:'방문 데이터 필요')+
+    kpi('방어한 취소',R.defended!=null?R.defended.toFixed(1)+'건':'–',`판정 ${R.n}건 기준`)+
+    kpi('방어 이익 + 절감',won(R.gain!=null?R.gain+R.saving:null),`학습케어 절감 ${won(R.saving)}`)+
+    kpi('테스트 총비용',won(R.cost),`방문 1건 ${won(R.perVisit)}${R.hasCost?' (기록 평균)':' (가정값)'}`)+
+    kpi('순이익',`<span class="${cls(R.net)}">${won(R.net)}</span>`,'')+
+    kpi('ROI',`<span class="${cls(R.roi)}">${pct(R.roi,0)}</span>`,`손익분기 방문단가 ${won(R.be)}`);
+  $('roiFormula').textContent=R.d==null?'판정 가능한 방문 데이터가 생기면 계산 과정이 표시됩니다.':
+`줄어든 취소율 = 택배 기대취소율 ${pct(A.exp)} − 방문 취소율 ${pct(A.vRate)} = ${pp(R.d)}
+방어 건수     = ${pp(R.d)} × ${R.n}건 = ${R.defended.toFixed(2)}건
+방어 이익     = ${R.defended.toFixed(2)}건 × ${won(S.profit)} = ${won(R.gain)}
+학습케어 절감 = ${won(R.care)} × ${R.n}건 = ${won(R.saving)}
+총비용        = ${won(R.perVisit)} × ${R.n}건 + 고정비 ${won(+S.testFixed)} = ${won(R.cost)}
+순이익        = ${won(R.gain)} + ${won(R.saving)} − ${won(R.cost)} = ${won(R.net)}
+ROI           = 순이익 ÷ 총비용 = ${pct(R.roi,0)}
+손익분기 방문단가 = ${pp(R.d)} × ${won(S.profit)} + ${won(R.care)} = ${won(R.be)}`;
+  const ds=[0.02,0.04,0.06,0.08,0.10,0.12,0.15],cs=[30000,50000,80000,100000,150000,200000];
+  const mark=R.d!=null?R.d:null;
+  $('sensTable').innerHTML=`<table><tr><th>취소율 감소 \\ 방문비용</th>${cs.map(c=>`<th>${man(c)}원</th>`).join('')}</tr>${ds.map(d=>`<tr><td>${pp(d)}${mark!=null&&Math.abs(mark-d)<0.01?' ◀ 테스트 근접':''}</td>${cs.map(c=>{const v=d*S.profit+R.care-c;return`<td class="${cls(v)}">${num(v)}</td>`}).join('')}</tr>`).join('')}</table>`;
+}
+function renderExp(A,R,E){
+  $('expKpis').innerHTML=
+    kpi('대상 취소율 (택배)',pct(E.seg.rate),`${bandLabelMin(+S.expAge)} · ${E.B.label}`)+
+    kpi('취소 감소율 가정',pct(E.rel,0),S.relRed!==''?'수동 입력':R.relRed!=null?'테스트 결과':'테스트 전 기본값 50%')+
+    kpi('목표 건당 비용 (상한)',won(E.valuePerVisit),'이 금액 이하로 운영해야 이익')+
+    kpi('예상 건당 비용',`<span class="${E.perVisit!=null&&E.perVisit<=E.valuePerVisit?'pos':'neg'}">${won(E.perVisit)}</span>`,`월 ${num(E.tot.vol)}건 · 본사비 포함`)+
+    kpi('필요 인원 (직고용)',E.tot.heads+'명',`1인 월 비용 ${man(E.perHead)}원`)+
+    kpi('월 순이익',`<span class="${cls(E.tot.net)}">${man(E.tot.net)}원</span>`,`연 ${man(E.tot.net*12)}원 · 월 방어 ${E.tot.defended.toFixed(1)}건`);
+  $('expTable').innerHTML=`<table><tr><th>권역</th><th>월 방문 물량</th><th>1인 월 처리량</th><th>직고용 인원</th><th>직고용 건당</th><th>외주 건당</th><th>운영</th><th>월 비용</th><th>월 방어(건)</th><th>월 순이익</th></tr>${E.rows.map(x=>`<tr><td>${x.rg}</td><td>${x.vol.toFixed(0)}</td><td>${x.cap.toFixed(0)}</td><td>${x.heads}</td><td>${won(x.inPer)}</td><td>${won(S.outCost)}</td><td><b>${x.mode}</b></td><td>${man(x.cost)}</td><td>${x.defended.toFixed(1)}</td><td class="${cls(x.net)}">${man(x.net)}</td></tr>`).join('')}
+    <tr style="font-weight:700"><td>합계</td><td>${E.tot.vol.toFixed(0)}</td><td></td><td>${E.tot.heads}</td><td colspan="3">본사 고정비 ${man(+S.hqCost)}원 포함</td><td>${man(E.tot.cost)}</td><td>${E.tot.defended.toFixed(1)}</td><td class="${cls(E.tot.net)}">${man(E.tot.net)}</td></tr></table>
+    <p class="note">직고용 인원은 올림 처리(0.3명분 물량도 1명). 물량이 적은 권역은 1명을 다 못 써서 건당 비용이 비싸지므로 외주가 유리해집니다. 1인 월 손익분기 처리량 = <b>${E.beVisitsPerHead?E.beVisitsPerHead.toFixed(0):'–'}건</b> (이보다 적게 처리하면 그 기사는 적자).</p>`;
+  const B=E.B;
+  $('ageTable').innerHTML=`<table><tr><th>대상</th><th>월 물량</th><th>택배 취소율</th><th>목표 건당 비용</th><th>월 방어(건)</th><th>월 방어 이익</th></tr>${[0,60,65,70,75,80].map(a=>{const s=segStats(B,a),v=s.rate*E.rel*S.profit+E.care,vol=s.monthly*S.coverage/100;
+    return`<tr${a===+S.expAge?' style="font-weight:700"':''}><td>${bandLabelMin(a)}</td><td>${vol.toFixed(0)}</td><td>${pct(s.rate)}</td><td>${won(v)}</td><td>${(vol*s.rate*E.rel).toFixed(1)}</td><td>${man(vol*s.rate*E.rel*S.profit)}원</td></tr>`}).join('')}</table>`;
+}
+function renderGuide(A,E){
+  const B=E.B,n=30;
+  const rows=[0,70,75,80].map(a=>{const p0=segStats(B,a).rate;let k05=-1,k10=-1;for(let k=0;k<=n;k++){const pv=binomCdf(k,n,p0);if(pv<0.05)k05=k;if(pv<0.10)k10=k}
+    // 80% 검정력으로 '취소 절반 감소'를 잡는 데 필요한 표본 (단측 5%)
+    const p1=p0/2,za=1.645,zb=0.842,need=Math.ceil(((za*Math.sqrt(p0*(1-p0))+zb*Math.sqrt(p1*(1-p1)))/(p0-p1))**2);
+    return{a,p0,exp:p0*n,k05,k10,need}});
+  $('sigBox').innerHTML=`<p style="margin-top:0">택배 취소율이 10% 안팎이면 30건 중 원래 취소될 건은 3~4건뿐입니다. 그래서 <b>30건 테스트는 "효과가 크면 보이고, 작으면 안 보이는" 수준</b>입니다. 대상 연령을 높이면 원래 취소율이 높아져 판별력이 올라갑니다.</p>
+  <table><tr><th>테스트 대상</th><th>택배 취소율</th><th>30건 중 예상 취소</th><th>효과 확인 (95%) 기준</th><th>방향성 (90%) 기준</th><th>"취소 절반" 확인에 필요한 건수</th></tr>
+  ${rows.map(r=>`<tr${r.a===75?' style="font-weight:700"':''}><td>${bandLabelMin(r.a)}</td><td>${pct(r.p0)}</td><td>${r.exp.toFixed(1)}건</td><td>${r.k05<0?'불가':r.k05+'건 이하'}</td><td>${r.k10<0?'불가':r.k10+'건 이하'}</td><td>${num(r.need)}건</td></tr>`).join('')}</table>
+  <p class="note">읽는 법: 75세 이상 대상이면 30건 중 취소가 표의 기준 이하일 때 "우연이 아니다"라고 말할 수 있습니다. 30건으로 결론이 애매하면 ROI 판단은 "취소율 감소폭이 이 정도면 남는다"(③ 민감도 표)로 하고, 확장은 1~2개 권역 파일럿으로 표본을 더 쌓는 것을 권장합니다.</p>`;
+}
+function renderLog(A){
+  if(!A.vRows.length){$('logTable').innerHTML='<p class="note">위에서 직접 입력하거나 대상자 엑셀을 업로드하면 건별 상태가 표시됩니다.</p>';return}
+  const tag={ok:'<span class="tag ok">유지</span>',ng:'<span class="tag ng">취소</span>',wait:'<span class="tag wait">관찰 중</span>',miss:'<span class="tag miss">계약 미매칭</span>'};
+  const mask=s=>s?s.slice(0,6)+'…'+s.slice(-3):'';
+  $('logTable').innerHTML=`<table><tr><th>주문키</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${A.vRows.map(({v,c,st})=>{
+    const el=c&&c.ship&&A.asOf?Math.round((A.asOf-toDate(c.ship))/DAY)+'일':'–';
+    return`<tr><td>${mask(v.ok||v.ck)}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td><button class="btn" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button></td></tr>`}).join('')}</table>
+  <p class="note">계약 미매칭 = 공용폴더의 신청자관리 파일에서 주문키/고객키를 못 찾은 건 (해당 월 파일 누락, 키 오타, 배송 전 취소로 행이 사라진 경우).</p>`;
+}
+const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+$('logTable').addEventListener('click',e=>{const k=e.target.dataset?.del;if(k)removeVisit(k)});
+
+// ================= 시작 =================
+(async()=>{
+  bindInputs();
+  try{const t=localStorage.getItem('talkisVisit.tab');if(t)document.querySelector(`#tabs button[data-t="${t}"]`)?.click()}catch(e){}
+  try{contracts=await kvGet('contracts')||[];visits=await kvGet('visits')||[]}catch(e){}
+  // 저장된 공용폴더가 있으면: 권한이 살아 있으면 바로 다시 읽고, 아니면 버튼으로 재허용 유도
+  try{
+    dirHandle=await kvGet('dirHandle')||null;
+    if(dirHandle&&await dirHandle.queryPermission({mode:'read'})!=='granted'){
+      const b=$('btnDir');b.dataset.reauth='1';b.textContent=`공용폴더 "${dirHandle.name}" 다시 열기`;
+      setStatus('저장된 데이터로 표시 중 — 최신 파일을 반영하려면 "공용폴더 다시 열기"를 눌러 허용하세요.');
+    }
+  }catch(e){dirHandle=null}
+  render();
+  if(dirHandle&&!$('btnDir').dataset.reauth)loadFolder();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);
+})();
+</script>
+</body>
+</html>
