@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>톡이즈 방문설치 ROI</title>
+<title>톡이즈 방문설치 취소율 비교</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
@@ -45,6 +45,24 @@ code{background:var(--surface-2);padding:1px 5px;border-radius:4px;font-size:12p
 nav.tabs{display:flex;gap:4px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto}
 nav.tabs button{border:0;background:none;padding:12px 14px;font-size:14px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit}
 nav.tabs button.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+nav.tabs .tab-sep{align-self:center;margin-left:14px;padding-left:14px;border-left:1px solid var(--border);font-size:11.5px;color:var(--muted);white-space:nowrap}
+nav.tabs button.sub{font-size:13px;color:var(--muted)}
+.hero{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch}
+.hero .side{background:var(--surface-2);border-radius:10px;padding:16px 18px}
+.hero .side .l{font-size:13px;color:var(--text-2);font-weight:600}
+.hero .side .big{font-size:46px;font-weight:800;line-height:1.15;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.hero .side.ship .big{color:var(--s-ship)}.hero .side.visit .big{color:var(--s-visit)}
+.hero .side .d{font-size:12.5px;color:var(--text-2)}
+.hero .mid{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-width:150px;padding:0 6px}
+.hero .mid .diff{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.hero .mid .d{font-size:12px;color:var(--text-2)}
+.hero-row+.hero-row{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.hero-t{font-size:14px;font-weight:700;margin-bottom:8px}.hero-t span{font-weight:400;color:var(--text-2);font-size:12.5px;margin-left:6px}
+.prog{margin-top:14px}
+.prog .bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--s-visit);border-radius:4px}
+.prog .d{font-size:12px;color:var(--text-2);margin-top:5px}
+@media(max-width:860px){.hero{grid-template-columns:1fr}.hero .side .big{font-size:38px}}
 main{padding:20px 24px;max-width:1280px;margin:0 auto}
 .panel{display:none}.panel.on{display:block}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px}
@@ -86,66 +104,146 @@ td:first-child,th:first-child{text-align:left}
 .form input.prov{border-color:var(--warn);background:var(--warn-bg)}
 .prov-card{border-color:var(--warn)}
 .prov-card h2{color:var(--warn)}
+.dlg{border:1px solid var(--border);border-radius:14px;padding:0;background:var(--surface);color:var(--text);width:min(620px,calc(100vw - 32px));max-height:calc(100vh - 40px)}
+.dlg::backdrop{background:rgba(0,0,0,.45)}
+.dlg>*{margin-left:20px;margin-right:20px}
+.dlg-h{display:flex;justify-content:space-between;align-items:center;margin:0;padding:14px 20px;border-bottom:1px solid var(--border);font-size:15px;position:sticky;top:0;background:var(--surface)}
+.dlg-h .x{border:0;background:none;color:var(--text-2);font-size:16px;cursor:pointer;padding:2px 6px}
+.dlg-f{display:flex;justify-content:space-between;gap:8px;margin:0;padding:12px 20px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--surface)}
+.dlg-f>:only-child{margin-left:auto}
+.metric-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:16px}
+.mb-l{font-size:13px;font-weight:700}
+.mb-d{font-size:12.5px;color:var(--text-2)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;padding:3px;background:var(--surface-2)}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:7px;font:inherit;font-size:13px;color:var(--text-2);cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--text);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+body:not(.authed) .auth-only{display:none!important}
+.dlg .form{margin-top:16px}
+.dlg .note{margin-bottom:16px}
+.up-sec{padding:14px 0;border-bottom:1px solid var(--border)}
+.up-sec:last-of-type{border-bottom:0}
+.up-t{font-weight:700;font-size:13.5px}.up-t span{font-weight:400;color:var(--text-2);font-size:12px}
+.up-s{font-size:12.5px;color:var(--text-2);margin:4px 0 8px}
+.up-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.drop{display:block;border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;font-size:13px;color:var(--text-2);cursor:pointer;background:var(--surface-2)}
+.drop small{display:block;font-size:11.5px;color:var(--muted);margin-top:4px}
+.drop:hover,.drop.over{border-color:var(--accent);color:var(--text)}
+.drop.over{background:var(--surface)}
 .formula{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-family:Consolas,monospace;font-size:12.5px;white-space:pre-wrap}
 </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>톡이즈 방문설치 ROI</h1>
-    <div class="sub">택배 배송 vs 방문 설치 취소율 비교 · 테스트 ROI · 지역 전담인력 건당 비용</div>
+    <h1>톡이즈 방문설치 — 택배 vs 방문 취소율</h1>
+    <div class="sub">방문설치로 반품(취소)이 줄었는가 · 비용 효과는 참고 탭</div>
   </div>
   <div class="uploads">
-    <button class="btn primary" id="btnDir">공용폴더 연결</button>
-    <button class="btn" id="btnReload" style="display:none">폴더 다시 읽기</button>
-    <label class="btn" title="폴더 연결이 안 되는 브라우저용">수동: 신청자관리<input type="file" id="fContract" accept=".xlsx,.xls" multiple></label>
-    <label class="btn">방문 대상자 엑셀 업로드<input type="file" id="fVisit" accept=".xlsx,.xls,.csv"></label>
-    <button class="btn" id="btnTpl">대상자 양식 받기</button>
-    <button class="btn" id="btnClear">데이터 초기화</button>
+    <button class="btn primary auth-only" id="btnUp">파일 업로드</button>
+    <button class="btn auth-only" id="btnSync" title="이 PC의 데이터를 GitHub에 올려 다른 PC에서도 보이게 합니다 (토큰 필요)">동기화</button>
+    <button class="btn auth-only" id="btnSet">설정</button>
+    <span class="auth-only" id="whoami" style="font-size:12.5px;color:var(--text-2)"></span>
+    <button class="btn" id="btnLogin">로그인</button>
   </div>
 </header>
+
+<!-- 로그인 -->
+<dialog id="dlgLogin" class="dlg">
+  <div class="dlg-h"><b>로그인</b><button class="x" data-close aria-label="닫기">✕</button></div>
+  <form class="form" id="loginForm" style="grid-template-columns:1fr">
+    <label>아이디<input id="loginId" autocomplete="username"></label>
+    <label>비밀번호<input type="password" id="loginPw" autocomplete="current-password"></label>
+    <button type="submit" hidden></button>
+  </form>
+  <p class="note" id="loginErr" style="color:var(--bad);min-height:1.2em"></p>
+  <p class="note">로그인하면 파일 업로드·동기화·설정이 보입니다. 화면 열람은 로그인 없이 누구나 가능합니다.</p>
+  <div class="dlg-f"><button class="btn" data-close>취소</button><button class="btn primary" id="loginOk">로그인</button></div>
+</dialog>
+
+<!-- 동기화 토큰 -->
+<dialog id="dlgTok" class="dlg">
+  <div class="dlg-h"><b>동기화 — GitHub 토큰</b><button class="x" data-close aria-label="닫기">✕</button></div>
+  <div class="form" style="grid-template-columns:1fr"><label>GitHub 토큰 (이 PC에만 저장)<input type="password" id="tokInput" placeholder="github_pat_… 또는 ghp_…" autocomplete="off"></label></div>
+  <p class="note">업로드는 <code>wminfobin-byte/talkis_visit</code> 레포 쓰기 권한(Contents: Read and write)이 있는 토큰을 가진 사람만 할 수 있습니다.<br>
+  GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → 저장소 <code>talkis_visit</code> 선택 → Contents 읽기/쓰기.<br>
+  올라가는 데이터에는 <b>고객키·주문키·비고·설치담당이 들어가지 않습니다</b> (공개 레포). 다른 PC는 대시보드를 열 때 자동으로 받아 봅니다.</p>
+  <div class="dlg-f"><button class="btn" data-close>취소</button><button class="btn primary" id="tokOk">저장하고 동기화</button></div>
+</dialog>
+
+<!-- 파일 업로드 -->
+<dialog id="dlgUp" class="dlg">
+  <div class="dlg-h"><b>파일 업로드</b><button class="x" data-close aria-label="닫기">✕</button></div>
+  <div class="up-sec">
+    <div class="up-t">① 신청자관리 일마감 <span>— 공용폴더에서 읽음</span></div>
+    <div class="up-s" id="upDir"></div>
+    <div class="up-btns">
+      <button class="btn primary" id="btnDir">공용폴더 연결</button>
+      <button class="btn" id="btnReload" style="display:none">폴더 다시 읽기</button>
+    </div>
+  </div>
+  <div class="up-sec">
+    <div class="up-t">② 신청자관리 월간누적 <span>— wm_dash 취소율 탭에 올린 파일 자동 사용</span></div>
+    <div class="up-s" id="upMonth"></div>
+    <label class="drop" data-drop="fContract">여기에 엑셀을 끌어다 놓거나 <u>클릭해서 선택</u><small>wm_dash에 올리지 않은 파일만 · 여러 개 가능 · 같은 파일명은 덮어씀</small><input type="file" id="fContract" accept=".xlsx,.xls" multiple hidden></label>
+  </div>
+  <div class="up-sec">
+    <div class="up-t">③ 방문 대상자</div>
+    <div class="up-s" id="upVisit"></div>
+    <label class="drop" data-drop="fVisit">여기에 엑셀을 끌어다 놓거나 <u>클릭해서 선택</u><small>대상자 양식 또는 CMS 고객관리(DB수 파일) 양식 그대로 · 고객키만 읽고 고객명·전화번호는 읽지 않음</small><input type="file" id="fVisit" accept=".xlsx,.xls,.csv" hidden></label>
+    <div class="up-btns"><button class="btn" id="btnTpl">대상자 양식 받기</button></div>
+  </div>
+  <div class="dlg-f"><button class="btn" id="btnClear">데이터 초기화</button><button class="btn primary" data-close>닫기</button></div>
+</dialog>
+
+<!-- 설정 (비교 조건) -->
+<dialog id="dlgSet" class="dlg">
+  <div class="dlg-h"><b>설정 — 비교 조건</b><button class="x" data-close aria-label="닫기">✕</button></div>
+  <div class="form">
+    <label>판정 대기 (배송 후 N일 지난 건만, 0 = 대기 없이 전부 집계)<input type="number" data-k="waitDays" min="0"></label>
+    <label>대조군 기간 여유 (방문군 신청일 ±N일)<input type="number" data-k="padDays" min="0"></label>
+    <label>기준일 (비우면 파일 최신일)<input type="date" data-k="asOf"></label>
+    <label class="chk"><input type="checkbox" data-k="sameRegion"> 대조군을 방문군과 같은 권역으로 제한</label>
+  </div>
+  <p class="note"><b>평소엔 기본값 그대로 두면 됩니다.</b> 바꾸면 바로 반영되고 이 브라우저에 저장됩니다.<br>
+  · <b>판정 대기</b> (기본 0): 최근 계약은 아직 반품이 덜 들어와 취소율이 낮게 보입니다. 최종 결론을 낼 때 14로 두면 배송 후 14일 지난 건만 비교합니다<br>
+  · <b>대조군 기간 여유</b> (기본 30): 방문군 신청 기간 앞뒤 N일의 택배 계약을 비교 대상으로 씀. 너무 좁으면 표본이 적고, 너무 넓으면 시기(프로모션·계절) 차이가 섞입니다<br>
+  · <b>기준일</b> (기본 빈칸 = 파일 최신일): 판정 대기를 켰을 때 "배송 후 N일"을 어느 날짜에서 셀지 정함. 판정 대기가 0이면 영향 없음<br>
+  · <b>같은 권역으로 제한</b>: 방문군이 특정 권역(예: 수도권)에만 있을 때 켜면, 대조군도 그 권역 계약만 써서 지역 차이를 없앱니다</p>
+  <div class="dlg-f"><button class="btn primary" data-close>닫기</button></div>
+</dialog>
 <div class="status" id="status">데이터 불러오는 중…</div>
 <nav class="tabs" id="tabs">
-  <button data-t="sum" class="on">① 결론</button>
-  <button data-t="cmp">② 취소율 비교</button>
-  <button data-t="roi">③ 테스트 ROI</button>
-  <button data-t="exp">④ 전담인력 확장</button>
-  <button data-t="guide">⑤ 테스트 설계</button>
-  <button data-t="log">⑥ 방문 대상자</button>
+  <button data-t="sum" class="on">① 취소율 비교</button>
+  <button data-t="log">② 방문 대상자</button>
+  <button data-t="guide">③ 테스트 설계</button>
+  <span class="tab-sep">비용 참고</span>
+  <button data-t="roi" class="sub">④ 테스트 ROI</button>
+  <button data-t="exp" class="sub">⑤ 전담인력 확장</button>
 </nav>
 <main>
 
-<!-- ① 결론 -->
+<!-- ① 취소율 비교 (핵심) -->
 <section class="panel on" id="p-sum">
-  <div id="provCard"></div>
+  <div class="metric-bar">
+    <span class="mb-l">비교 기준</span>
+    <div class="seg" id="metricSeg"><button data-metric="init">최초계약 기준</button><button data-metric="post">배송후 기준</button></div>
+    <span class="mb-d" id="metricDesc"></span>
+  </div>
   <div id="verdict"></div>
-  <div class="kpis" id="sumKpis"></div>
-  <div class="card"><h2>한 줄 요약 숫자</h2><div class="tw" id="sumTable"></div></div>
+  <div class="card hero-card" id="hero"></div>
+  <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
+  <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
+    <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
+  <div class="card"><h2 id="regTitle">권역별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cReg"></canvas></div>
+    <div class="tw" id="regCmp" style="margin-top:12px"></div></div>
+  <div class="card"><h2 id="daysTitle">반품까지 걸린 일수 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
+    <div class="tw" id="daysTable" style="margin-top:12px"></div></div>
 </section>
 
-<!-- ② 취소율 비교 -->
-<section class="panel" id="p-cmp">
-  <div class="card">
-    <h2>비교 조건</h2>
-    <div class="form">
-      <label>관찰기간 (배송 후 N일 지난 건만 판정)<input type="number" data-k="obsDays" min="1"></label>
-      <label>대조군 기간 여유 (방문군 배송일 ±N일)<input type="number" data-k="padDays" min="0"></label>
-      <label>기준일 (비우면 파일 최신일)<input type="date" data-k="asOf"></label>
-      <label class="chk"><input type="checkbox" data-k="sameRegion"> 대조군을 방문군과 같은 권역으로 제한</label>
-    </div>
-    <p class="note">대조군 = 같은 기간 택배로만 배송된 톡이즈 계약. 연령 구성이 다르면 취소율도 달라지므로, <b>방문군의 연령 구성에 맞춰 대조군 취소율을 보정</b>한 값(연령보정 기대취소율)을 기준으로 씁니다.</p>
-  </div>
-  <div class="kpis" id="cmpKpis"></div>
-  <div class="grid2">
-    <div class="card"><h2>연령대별 취소율 — 택배 vs 방문</h2><div class="chartbox"><canvas id="cAge"></canvas></div></div>
-    <div class="card"><h2>반품까지 걸린 일수 (택배 전체)</h2><div class="chartbox"><canvas id="cDays"></canvas></div><p class="note">반품 대부분이 배송 직후에 발생합니다. 관찰기간을 정하는 근거입니다.</p></div>
-  </div>
-  <div class="card"><h2>연령대별 상세</h2><div class="tw" id="cmpTable"></div></div>
-  <div class="card"><h2>권역별 택배 취소율 (현재 기준선)</h2><div class="tw" id="regTable"></div></div>
-</section>
-
-<!-- ③ 테스트 ROI -->
+<!-- ④ 테스트 ROI (비용 참고) -->
 <section class="panel" id="p-roi">
+  <div class="provBox"></div>
   <div class="card">
     <h2>가정</h2>
     <div class="form">
@@ -169,8 +267,9 @@ td:first-child,th:first-child{text-align:left}
   </div>
 </section>
 
-<!-- ④ 전담인력 확장 -->
+<!-- ⑤ 전담인력 확장 (비용 참고) -->
 <section class="panel" id="p-exp">
+  <div class="provBox"></div>
   <div class="card">
     <h2>확장 가정</h2>
     <div class="form">
@@ -196,7 +295,7 @@ td:first-child,th:first-child{text-align:left}
   <div class="card"><h2>대상 연령을 어디까지 넓힐까</h2><p class="note" style="margin-top:0">연령이 높을수록 취소율이 높아 방문 1건의 가치가 커집니다. "목표 건당 비용"은 이 금액 이하로 운영해야 이익이 나는 상한선입니다.</p><div class="tw" id="ageTable"></div></div>
 </section>
 
-<!-- ⑤ 테스트 설계 -->
+<!-- ③ 테스트 설계 -->
 <section class="panel guide" id="p-guide">
   <div class="card">
     <h2>30건 테스트로 무엇을 알 수 있나</h2>
@@ -209,7 +308,7 @@ td:first-child,th:first-child{text-align:left}
       <li><b>배정</b>: 상담원이 고르지 않습니다. 대상 고객 중 무작위(예: 주문키 끝자리 짝수)로 방문 제안. 상담원이 "잘 될 것 같은 고객"을 고르면 결과가 부풀려집니다.</li>
       <li><b>거절자 기록</b>: 방문을 제안했는데 거절한 고객도 따로 기록(비고란). 거절자 취소율이 높다면 "방문 제안 자체"의 효과와 분리해서 봐야 합니다.</li>
       <li><b>방문 시점</b>: 배송 당일~2일 내. 반품 대부분이 배송 후 7일 안에 일어나므로, 늦게 가면 방어할 기회가 사라집니다.</li>
-      <li><b>관찰기간</b>: 배송 후 14일(청약철회 기간). 마지막 방문 후 14일이 지나면 판정이 가능합니다.</li>
+      <li><b>결과 해석</b>: 취소율은 기준일까지 들어온 계약을 전부 집계합니다(wm_dash와 동일). 청약철회 기간(배송 후 14일)이 안 지난 건은 아직 취소될 수 있으니, 최종 결론은 마지막 방문 후 14일이 지난 뒤 확인하세요.</li>
       <li><b>비용 기록</b>: 방문마다 이동시간·설치시간·실비를 기록해야 장기 고용 시 1인 처리량과 건당 비용을 추정할 수 있습니다.</li>
       <li><b>품질 기록</b>: 와이파이 연결·회원가입 완료 여부. "설치는 됐는데 취소"인 건은 사유를 비고에 적어둡니다.</li>
     </ol>
@@ -217,18 +316,18 @@ td:first-child,th:first-child{text-align:left}
   <div class="card">
     <h2>매일 할 일 (운영자)</h2>
     <ol>
-      <li>CMS에서 <b>신청자관리 월간 파일</b>(테스트 기간이 걸친 월 전부)을 받아 <b>공용폴더</b>에 저장 (파일명 <code>신청자관리_yyyymm.xlsx</code> 그대로, 같은 월은 덮어쓰기)</li>
-      <li>대시보드를 열고 "공용폴더 다시 열기" 또는 "폴더 다시 읽기" 클릭 — 폴더 안 신청자관리 파일을 전부 새로 읽습니다</li>
-      <li>방문한 고객을 <b>⑥ 방문 대상자</b> 탭에서 직접 입력하거나, 양식 엑셀에 모아 "방문 대상자 엑셀 업로드" (주문키 또는 고객키만 있으면 됨, 나머지는 선택)</li>
-      <li>① 결론 탭 확인 — 관찰 완료 건수가 30건이 되면 판정이 나옵니다</li>
+      <li>대시보드를 열고 "공용폴더 다시 열기" 또는 "폴더 다시 읽기" 클릭 — 공용폴더의 <b>일마감</b> 신청자관리 파일을 전부 새로 읽습니다 (폴더의 월간누적 파일은 쓰지 않음)</li>
+      <li><b>월간누적</b>은 wm_dash 취소율 탭에 올린 신청자관리(조회 기간 전체) 파일을 자동으로 같이 씁니다 — 같은 브라우저에서 두 대시보드를 모두 github.io 주소로 열 때만 가능. wm_dash에 새로 올리고 이 탭으로 돌아오면 자동 반영. (따로 올리고 싶으면 "월간누적 업로드")</li>
+      <li>방문한 고객을 <b>② 방문 대상자</b> 탭에서 직접 입력하거나, 양식 엑셀에 모아 "방문 대상자 엑셀 업로드" (주문키 또는 고객키만 있으면 됨, 나머지는 선택). CMS 고객관리에서 대상 고객만 받은 엑셀(공용폴더 DB수 파일 <code>WM_고객관리_*.xlsx</code>와 같은 양식)도 그대로 올릴 수 있음 — 고객키만 읽고, 이미 입력한 방문일·비용 등은 유지</li>
+      <li>① 취소율 비교 탭 확인 — 방문 건수가 30건이 되면 판정이 나옵니다</li>
     </ol>
     <p class="note">고객명·전화번호는 저장하지 않으며, 모든 계산은 이 브라우저 안에서만 이뤄집니다.</p>
   </div>
 </section>
 
-<!-- ⑥ 방문 기록 -->
+<!-- ② 방문 대상자 -->
 <section class="panel" id="p-log">
-  <div class="card">
+  <div class="card auth-only">
     <h2>방문 대상자 직접 입력</h2>
     <div class="form">
       <label>주문키 또는 고객키 *<input id="vKey" placeholder="CMS 신청자관리의 주문키/고객키"></label>
@@ -268,9 +367,9 @@ const CT={orderKey:['주문키',2],custKey:['고객키',3],manager:['담당자',
   term:['철회/해지 구분',62],birth:['신용정보조회생년월일(계약자)',55],ageTxt:['통화연령층',67],brand:['브랜드명',71]};
 // 파일 미업로드 시 기준선: 2026년 6~9월 톡이즈 계약 실측 (권역|연령대 → [계약, 반품])
 const BASE={months:4,label:'내장 기준선 (26년 6~9월 실측)',data:{"수도권|0":[146,6],"제주|75":[5,1],"부울경|60":[45,4],"수도권|70":[347,33],"수도권|65":[317,28],"호남|65":[52,4],"수도권|60":[151,11],"수도권|75":[306,52],"대구경북|70":[43,1],"부울경|65":[92,12],"충청|70":[61,4],"부울경|75":[65,9],"부울경|70":[84,14],"수도권|80":[258,47],"충청|65":[72,6],"호남|0":[27,0],"부울경|80":[51,12],"충청|80":[40,9],"충청|75":[45,5],"제주|0":[7,0],"호남|80":[31,7],"강원|75":[8,2],"대구경북|80":[30,6],"부울경|0":[43,2],"강원|65":[26,2],"호남|70":[44,6],"호남|75":[36,9],"충청|0":[38,3],"충청|60":[37,2],"대구경북|75":[24,4],"대구경북|65":[46,2],"제주|70":[10,1],"대구경북|0":[26,3],"호남|60":[28,3],"대구경북|60":[26,1],"강원|70":[22,1],"강원|80":[14,4],"강원|0":[8,0],"강원|60":[9,1],"제주|60":[5,0],"제주|65":[5,2],"제주|80":[5,0]}};
-const DEFAULTS={obsDays:14,padDays:30,asOf:'',sameRegion:false,
+const DEFAULTS={waitDays:0,padDays:30,asOf:'',sameRegion:false,
   profit:1000000,careCost:20000,careReplaced:true,visitCost:80000,testFixed:0,
-  expAge:'75',coverage:100,relRed:'',salary:3000000,burden:20,carCost:700000,etcCost:100000,
+  cmpMetric:'init',expAge:'75',coverage:100,relRed:'',salary:3000000,burden:20,carCost:700000,etcCost:100000,
   capMetro:5,capLocal:3.5,workDays:21,util:80,hqCost:0,outCost:60000,expMode:"inhouse"};
 // 실제 수치 없이 임의로 넣은 가정 — 확정 전까지 화면에 "임의값"으로 표시
 const PROV={visitCost:['방문 1건 비용','roi'],salary:['설치기사 1인 월 급여','exp'],burden:['4대보험·퇴직충당 (%)','exp'],
@@ -293,8 +392,10 @@ function toDate(v){
   if(v==null||v==='')return null;
   if(v instanceof Date)return isNaN(v)?null:new Date(v.getFullYear(),v.getMonth(),v.getDate());
   if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?new Date(d.y,d.m-1,d.d):null}
-  const m=String(v).trim().match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
-  return m?new Date(+m[1],+m[2]-1,+m[3]):null;
+  const s=String(v).trim(),m=s.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  const u=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})\b/);   // wm_dash 저장분(raw:false) 날짜 서식 m/d/yy
+  return u?new Date(u[3].length===2?2000+ +u[3]:+u[3],+u[1]-1,+u[2]):null;
 }
 const ymd=d=>d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
 const pct=(x,dg=1)=>x==null||isNaN(x)?'–':(x*100).toFixed(dg)+'%';
@@ -341,6 +442,8 @@ function parseContracts(rows){
   return out;
 }
 function findCol(h,keys){return h.findIndex(x=>keys.some(k=>x.includes(k)))}
+// 방문 대상자 파일: 대상자 양식 또는 CMS 고객관리(DB수 파일 WM_고객관리_*.xlsx) 양식 그대로.
+// 고객관리 양식은 고객키(G)만 쓰고 고객명·전화번호 등 나머지 열은 읽지 않는다.
 function parseVisits(rows){
   const h=rows[0].map(x=>String(x).replace(/\s/g,''));
   const ix={ok:findCol(h,['주문키']),ck:findCol(h,['고객키']),date:findCol(h,['방문일']),staff:findCol(h,['설치담당','기사','담당']),
@@ -354,61 +457,167 @@ function parseVisits(rows){
     .filter(v=>v.ok||v.ck);
 }
 
-// 신청자관리 파일 반영. replace=true면 기존 데이터를 버리고 이 파일들로 새로 구성(공용폴더 모드)
-async function ingestContracts(files,replace){
-  const map=new Map(replace?[]:contracts.map(c=>[c.ok,c]));
-  // 파일명 순으로 읽어 최신 월 파일이 덮어쓰도록
-  for(const f of files.sort((a,b)=>a.name.localeCompare(b.name))){const rows=await readRows(f);for(const c of parseContracts(rows))map.set(c.ok,c)}
-  contracts=[...map.values()];await kvSet('contracts',contracts);
-  const names=files.map(f=>f.name);
-  await kvSet('contractFiles',replace?names:[...new Set([...(await kvGet('contractFiles')||[]),...names])]);
+// ── 신청자관리 파일 종류 판별 (wm_dash spDetectType과 같은 규칙) ──
+// 상위 폴더 경로 전체(실계약/일마감 → 일마감, 취소반영/월간/누적 → 월간누적) 우선.
+// 없으면 파일명 날짜: yyyymmdd·yymmdd = 일마감, yyyymm·yymm = 월간누적
+// 예) 1-5 신청자관리(일마감)/2026-03/신청자관리_260302.xlsx → 일마감
+function contractKind(folder,name){
+  const f=String(folder||'');
+  if(/실계약|일마감|daily/i.test(f))return'daily';
+  if(/취소반영|월간|누적|cum|month/i.test(f))return'month';
+  const d=(String(name||'').match(/_(\d{4,8})(?!\d)/)||[])[1]||'';
+  if(d.length===8)return'daily';
+  if(d.length===6)return/^20\d{2}(0[1-9]|1[0-2])$/.test(d)?'month':'daily';
+  return'month';
+}
+let src=[];        // [{name,kind,mod,rows}] 파일별 톡이즈 슬림 행
+let wmSrc=[];      // wm_dash 취소율 탭에 올린 월간누적 (저장하지 않고 매번 wm_dash 저장소에서 읽음)
+let cinfo={daily:0,month:0,unknown:0,dailyRet:0};
+// wm_dash와 talkis_visit은 같은 출처(wminfobin-byte.github.io)라 IndexedDB를 같이 쓴다.
+// wm_dash 취소율 탭 DB(cancelDashboard/files)의 '신청자(전체)' = type 'app' 파일을 월간누적으로 읽는다.
+let wmKeySig=null;
+function openWmDash(){
+  return new Promise(res=>{
+    let q;try{q=indexedDB.open('cancelDashboard')}catch(e){return res(null)}
+    q.onupgradeneeded=e=>e.target.transaction.abort();   // DB가 없으면 만들지 않는다 (wm_dash 초기 생성을 방해하지 않도록)
+    q.onsuccess=()=>{const db=q.result;if(!db.objectStoreNames.contains('files')){db.close();return res(null)}res(db)};
+    q.onerror=()=>res(null);q.onblocked=()=>res(null);
+  });
+}
+// changed=true면 wm_dash 파일 구성이 바뀌어 다시 읽었다는 뜻
+async function loadWmDash(force){
+  const db=await openWmDash();
+  if(!db){const had=wmSrc.length;wmSrc=[];wmKeySig='';return had>0}
+  try{
+    const store=()=>db.transaction('files','readonly').objectStore('files');
+    const keys=await new Promise((r,j)=>{const q=store().getAllKeys();q.onsuccess=()=>r(q.result);q.onerror=j});
+    const sig=keys.join(',');if(!force&&sig===wmKeySig)return false;
+    const recs=await new Promise((r,j)=>{const out=[];const q=store().openCursor();
+      q.onsuccess=e=>{const c=e.target.result;if(!c)return r(out);if(c.value.type==='app')out.push(c.value);c.continue()};q.onerror=j});
+    wmSrc=recs.map(x=>({name:x.fileName,kind:'month',wm:true,mod:x.uploadTime||0,rows:parseContracts(x.data||[])}));
+    wmKeySig=sig;return true;
+  }catch(e){return false}finally{db.close()}
+}
+// wm_dash WM 취소율과 같은 판정:
+//  최초계약 = 일마감(고객키 중복 제거), 일마감에 이미 반품일 있는 건 제외
+//  일마감엔 있는데 월간누적에 없음 = 배송전취소 / 월간누적 반품일 있음 = 배송후취소 / 그 외 = 유지
+function buildContracts(){
+  const byMod=(a,b)=>(a.mod||0)-(b.mod||0)||a.name.localeCompare(b.name);
+  const K=c=>c.ck||c.ok;
+  const all=[...src,...wmSrc];   // 월간누적 = wm_dash 취소율 탭 파일 + 여기서 업로드한 파일 (같은 계약은 늦게 올린 쪽이 이김)
+  const months=all.filter(s=>s.kind==='month').sort(byMod),days=all.filter(s=>s.kind==='daily').sort(byMod);
+  const mm=new Map();for(const s of months)for(const c of s.rows)mm.set(K(c),c);   // 나중 파일(최신 상태)이 덮어씀
+  const mMonths=new Set();let mMax='';
+  for(const c of mm.values()){if(c.apply){mMonths.add(c.apply.slice(0,7));if(c.apply>mMax)mMax=c.apply}}
+  cinfo={daily:days.length,month:months.length,wm:wmSrc.length,unknown:0,dailyRet:0};
+  const out=[];
+  const dm=new Map();for(const s of days)for(const c of s.rows)dm.set(K(c),c);
+  for(const[k,d]of dm){
+    if(d.ret){cinfo.dailyRet++;continue}
+    const m=mm.get(k);
+    if(m)out.push({...m,apply:m.apply||d.apply,pre:false,initOk:true});
+    // 월간누적이 그 달을 덮고 있고, 신청일이 월간 파일 최신 신청일 이전일 때만 배송전취소로 확정
+    else if(d.apply&&mMonths.has(d.apply.slice(0,7))&&d.apply<=mMax)out.push({...d,ship:'',ret:'',pre:true,initOk:true});
+    else cinfo.unknown++;
+  }
+  // 일마감에 없는 월간 계약: 배송후 기준 비교에만 사용
+  for(const[k,m]of mm)if(!dm.has(k))out.push({...m,pre:false,initOk:false});
+  contracts=out;
+}
+async function saveSrc(){await kvSet('src',src);await kvSet('contractFiles',src.map(s=>s.name))}
+// 신청자관리 파일 반영
+//  공용폴더(fromDir) = 일마감만 사용. 다시 읽을 때 업로드한 월간누적만 남기고 나머지를 이 파일들로 교체
+//  업로드 = 월간누적으로 반영(up:true). 같은 파일명은 덮어씀
+async function ingestContracts(items,fromDir){
+  if(syncMode){syncMode=false;visits=await kvGet('visits')||[]}   // 원본 파일을 넣기 시작하면 동기화본 보기 해제
+  const map=new Map(src.filter(s=>!fromDir||s.up).map(s=>[s.kind+'|'+s.name,s]));
+  for(const it of items){const f=it.file||it;const kind=fromDir?contractKind(it.folder,f.name):'month';
+    if(fromDir&&kind!=='daily')continue;
+    const rows=await readRows(f);
+    map.set(kind+'|'+f.name,{name:f.name,kind,up:!fromDir,mod:f.lastModified||0,rows:parseContracts(rows)})}
+  src=[...map.values()];buildContracts();await saveSrc();
 }
 // 방문 대상자: 엑셀 업로드와 수기 입력을 한 목록으로 관리. 같은 키(주문키→고객키)는 나중 값으로 덮어씀
 const vKey=v=>v.ok||v.ck;
 async function saveVisits(){await kvSet('visits',visits)}
-async function upsertVisits(list){
+// keepFilled=true(파일 업로드): 파일에 빈 칸은 기존 입력값을 지우지 않는다 (고객관리 양식처럼 키만 있는 파일을 다시 올려도 방문일·비용 유지)
+async function upsertVisits(list,keepFilled){
+  if(syncMode)throw new Error('동기화본을 보는 중이라 대상자를 수정할 수 없습니다. 원본 데이터가 있는 PC에서 수정하세요.');
   const map=new Map(visits.map(v=>[vKey(v),v]));
-  for(const v of list)map.set(vKey(v),{...map.get(vKey(v)),...v});
+  for(const v of list){
+    const nv=keepFilled?Object.fromEntries(Object.entries(v).filter(([,x])=>x!==''&&x!==0)):v;
+    map.set(vKey(v),{...map.get(vKey(v)),...nv});
+  }
   visits=[...map.values()];await saveVisits();
 }
-async function ingestVisits(f){const list=parseVisits(await readRows(f));await upsertVisits(list);await kvSet('visitFile',f.name);return list.length}
-$('fContract').onchange=async e=>{
-  const files=[...e.target.files];if(!files.length)return;
-  setStatus('신청자관리 파일 읽는 중…');
-  try{await ingestContracts(files,false);render()}catch(err){setStatus('읽기 실패: '+err.message)}
-  e.target.value='';
-};
-$('fVisit').onchange=async e=>{
-  const f=e.target.files[0];if(!f)return;
-  try{const n=await ingestVisits(f);render();setStatus(`방문 대상자 ${n}건 반영 · 전체 ${visits.length}건`)}catch(err){setStatus('방문 대상자 파일 읽기 실패: '+err.message)}
-  e.target.value='';
-};
+async function ingestVisits(f){const list=parseVisits(await readRows(f));await upsertVisits(list,true);await kvSet('visitFile',f.name);return list.length}
+const XL_RE=/\.(xlsx|xls|csv)$/i;
+async function addMonthFiles(files){
+  files=files.filter(f=>XL_RE.test(f.name));if(!files.length)return;
+  $('upMonth').textContent='월간누적 파일 읽는 중…';
+  try{await ingestContracts(files,false);render()}catch(err){$('upMonth').textContent='읽기 실패: '+err.message}
+}
+async function addVisitFiles(files){
+  files=files.filter(f=>XL_RE.test(f.name));if(!files.length)return;
+  try{let n=0;for(const f of files)n+=await ingestVisits(f);render();$('upVisit').textContent=`방금 ${n}건 반영 · 전체 ${visits.length}건`}
+  catch(err){$('upVisit').textContent='방문 대상자 파일 읽기 실패: '+err.message}
+}
+$('fContract').onchange=async e=>{await addMonthFiles([...e.target.files]);e.target.value=''};
+$('fVisit').onchange=async e=>{await addVisitFiles([...e.target.files]);e.target.value=''};
+// 드래그 앤 드롭
+document.querySelectorAll('.drop').forEach(z=>{
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});
+  z.addEventListener('dragleave',()=>z.classList.remove('over'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');
+    const files=[...e.dataTransfer.files];(z.dataset.drop==='fContract'?addMonthFiles:addVisitFiles)(files)});
+});
+// 대화상자 바깥에 잘못 떨어뜨린 파일을 브라우저가 열어버리지 않게
+['dragover','drop'].forEach(t=>window.addEventListener(t,e=>{if(!e.target.closest?.('.drop'))e.preventDefault()}));
+$('btnUp').onclick=()=>{renderUpInfo();$('dlgUp').showModal()};
+$('btnSet').onclick=()=>$('dlgSet').showModal();
+document.querySelectorAll('.dlg').forEach(d=>{
+  d.addEventListener('click',e=>{   // 바깥(배경) 클릭 또는 닫기 버튼
+    const r=d.getBoundingClientRect(),out=e.target===d&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom);
+    if(out||e.target.closest('[data-close]'))d.close();
+  });
+});
+// 업로드 창 안의 항목별 상태
+function renderUpInfo(){
+  const ci=cinfo,re=$('btnDir').dataset.reauth;
+  $('upDir').innerHTML=!dirHandle?'공용폴더 미연결 — "공용폴더 연결"을 눌러 <code>09_WM_데일리 성과 RAW</code> 폴더를 고르세요 (Chrome·Edge)'
+    :re?`공용폴더 "${esc(dirHandle.name)}" — 권한이 끊김. "다시 열기"를 눌러 허용하세요`
+    :`공용폴더 "${esc(dirHandle.name)}" 연결됨 · 일마감 ${ci.daily}개 파일`;
+  const up=ci.month-ci.wm;
+  $('upMonth').innerHTML=ci.month?`wm_dash 취소율 탭 ${ci.wm}개${up?` + 여기서 업로드 ${up}개`:''}${ci.unknown?` · 월간 파일이 덮지 않는 계약 ${ci.unknown}건 제외`:''}`
+    :'없음 — wm_dash 취소율 탭에 신청자관리(조회 기간 전체)를 올리거나 아래에 파일을 놓으세요';
+  $('upVisit').textContent=`현재 ${visits.length}건${visits.length?' · 같은 고객을 다시 올리면 빈 칸은 기존 값 유지':''}`;
+}
 
 // ================= 공용폴더 연결 =================
 // 폴더 안(하위 1단계 포함)의 신청자관리_*.xlsx 전부를 읽어 계약 데이터를 새로 구성한다.
 // 폴더 핸들은 IndexedDB에 저장 → 다음 접속 시 "허용" 한 번으로 자동 재로딩.
-const CONTRACT_RE=/^신청자관리_\d{4,8}\.xlsx?$/;
+const CONTRACT_RE=/신청자관리.*\.xlsx?$/;
 let dirHandle=null;
-async function scanDir(dir,depth=0,out=[]){
+async function scanDir(dir,depth=0,out=[],path=''){
   for await(const [name,h] of dir.entries()){
     if(name.startsWith('~$'))continue; // 엑셀 임시파일
-    if(h.kind==='directory'){if(depth<1)await scanDir(h,depth+1,out);continue}
-    if(CONTRACT_RE.test(name))out.push(await h.getFile());
+    if(h.kind==='directory'){if(depth<2)await scanDir(h,depth+1,out,path+'/'+name);continue}
+    if(CONTRACT_RE.test(name))out.push({file:await h.getFile(),folder:path});   // 상위 폴더 경로 전체로 종류 판별
   }
   return out;
 }
 async function loadFolder(){
   setStatus(`공용폴더 "${dirHandle.name}" 읽는 중…`);
   try{
-    const files=await scanDir(dirHandle);
-    if(!files.length){setStatus(`"${dirHandle.name}" 폴더에 신청자관리_yyyymm.xlsx 파일이 없습니다.`);return}
+    const files=(await scanDir(dirHandle)).filter(it=>contractKind(it.folder,it.file.name)==='daily');
+    if(!files.length){setStatus(`"${dirHandle.name}" 폴더(하위 2단계 포함)에 신청자관리 일마감 엑셀이 없습니다.`);return}
     await ingestContracts(files,true);
     $('btnReload').style.display='';$('btnDir').textContent='공용폴더 변경';
     render();
   }catch(err){setStatus('폴더 읽기 실패: '+err.message)}
 }
 $('btnDir').onclick=async()=>{
-  if(!window.showDirectoryPicker){alert('이 브라우저는 폴더 연결을 지원하지 않습니다. Chrome 또는 Edge를 쓰거나, 수동 업로드 버튼을 사용하세요.');return}
+  if(!window.showDirectoryPicker){alert('이 브라우저는 폴더 연결을 지원하지 않습니다. Chrome 또는 Edge를 사용하세요. (일마감 파일은 공용폴더 연결로만 읽습니다)');return}
   // 저장된 폴더가 있고 권한만 끊긴 상태면 재허용, 아니면 새로 고르기
   if(dirHandle&&$('btnDir').dataset.reauth){
     if(await dirHandle.requestPermission({mode:'read'})==='granted'){delete $('btnDir').dataset.reauth;return loadFolder()}
@@ -423,7 +632,114 @@ $('btnReload').onclick=async()=>{
 };
 $('btnClear').onclick=async()=>{
   if(!confirm('업로드한 계약·방문 데이터를 모두 지웁니다. (가정값은 유지)'))return;
-  contracts=[];visits=[];await kvSet('contracts',[]);await kvSet('visits',[]);await kvSet('contractFiles',[]);await kvSet('visitFile','');render();refreshStatus();
+  contracts=[];visits=[];src=[];buildContracts();await kvSet('src',[]);await kvSet('contracts',[]);await kvSet('visits',[]);await kvSet('contractFiles',[]);await kvSet('visitFile','');render();refreshStatus();
+};
+
+// ================= 로그인 =================
+// 열람은 누구나. 로그인하면 파일 업로드·동기화·설정·대상자 입력이 보인다(body.authed).
+// 공개 레포라 비밀번호 원문 대신 PBKDF2-SHA256(20만 회) 해시만 둔다. 화면 제한일 뿐이고,
+// 실제 데이터 변경은 GitHub 토큰이 있어야 가능하다.
+const AUTH_ACCOUNTS=[
+  {id:'info_bin',salt:'e38352b06c9bf7cd4fe282a214177e06',h:'a6d16f230d7e176440ac111cc1d882291fca7e5b5fdf2ab86037f9e8907a2187'},
+  {id:'admin',salt:'93aee1445720b72d5097f39795cedfe7',h:'e0fb938f36178f1ec090ef9640261e43ee1b3db66906ab726b5b0b8bdc5aeb2c'},
+];
+const AUTH_KEY='talkisVisit.auth';
+async function pbkdf2Hex(pw,saltHex){
+  const salt=new Uint8Array(saltHex.match(/../g).map(x=>parseInt(x,16)));
+  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:200000},key,256);
+  return[...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function applyAuth(){
+  let id='';try{id=localStorage.getItem(AUTH_KEY)||''}catch(e){}
+  const ok=AUTH_ACCOUNTS.some(a=>a.id===id);
+  document.body.classList.toggle('authed',ok);
+  $('whoami').textContent=ok?id:'';
+  $('btnLogin').textContent=ok?'로그아웃':'로그인';
+}
+async function doLogin(){
+  const id=$('loginId').value.trim(),pw=$('loginPw').value,acc=AUTH_ACCOUNTS.find(a=>a.id===id);
+  $('loginErr').textContent='';$('loginOk').disabled=true;
+  try{
+    if(acc&&await pbkdf2Hex(pw,acc.salt)===acc.h){
+      try{localStorage.setItem(AUTH_KEY,id)}catch(e){}
+      $('loginPw').value='';$('dlgLogin').close();applyAuth();
+    }else $('loginErr').textContent='아이디 또는 비밀번호가 올바르지 않습니다.';
+  }catch(e){$('loginErr').textContent='로그인 확인 실패: '+e.message}
+  finally{$('loginOk').disabled=false}
+}
+$('btnLogin').onclick=()=>{
+  if(document.body.classList.contains('authed')){
+    try{localStorage.removeItem(AUTH_KEY)}catch(e){}
+    document.querySelectorAll('dialog[open]').forEach(d=>d.close());applyAuth();return;
+  }
+  $('loginErr').textContent='';$('dlgLogin').showModal();$('loginId').focus();
+};
+$('loginOk').onclick=doLogin;
+$('loginForm').onsubmit=e=>{e.preventDefault();doLogin()};
+applyAuth();
+
+// ================= 동기화 (GitHub, 공개 레포) =================
+// 올리기: 원본(일마감)이 있는 PC에서 [동기화] 버튼 → 토큰으로 data.json 교체. 자동 업로드 없음.
+// 받기: 원본이 없는 PC는 열 때 data.json을 받아 보기 전용으로 표시.
+// 공개 레포라 고객키·주문키·비고·설치담당은 넣지 않는다. 방문 대상자는 계약 순번(ix)으로 연결.
+const SYNC_REPO='wminfobin-byte/talkis_visit',SYNC_PATH='data.json',TOKEN_KEY='talkisVisit.ghToken';
+let syncMode=false,syncTs=0;   // syncMode=true: 동기화본을 보는 중 (이 PC에 원본 없음)
+const hasLocalSource=()=>src.some(s=>s.kind==='daily');
+function buildSyncPayload(){
+  const idx=new Map(contracts.map((c,i)=>[c,i]));
+  const byOk=new Map(contracts.map(c=>[c.ok,c])),byCk=new Map(contracts.filter(c=>c.ck).map(c=>[c.ck,c]));
+  // 행 = [신청일, 배송일, 반품일, 연령, 권역, 플래그(1=배송전취소, 2=최초계약 모수)]
+  const rows=contracts.map(c=>[c.apply||'',c.ship||'',c.ret||'',c.age??null,c.region||'',(c.pre?1:0)|(c.initOk?2:0)]);
+  const vs=visits.map(v=>{const c=(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))||null;
+    return{ix:c?idx.get(c):null,date:v.date||'',travel:v.travel||0,install:v.install||0,cost:v.cost||0,wifi:v.wifi||'',signup:v.signup||''}});
+  return{v:1,ts:Date.now(),cinfo:{daily:cinfo.daily,month:cinfo.month,unknown:cinfo.unknown},rows,visits:vs};
+}
+function applySyncPayload(p){
+  contracts=p.rows.map(r=>({ok:'',ck:'',apply:r[0],ship:r[1],ret:r[2],age:r[3],region:r[4],pre:!!(r[5]&1),initOk:!!(r[5]&2)}));
+  visits=p.visits.map((v,i)=>({...v,ok:'',ck:'',sid:'방문 '+(i+1)}));
+  cinfo={...p.cinfo,wm:0,dailyRet:0};syncMode=true;syncTs=p.ts||0;
+}
+async function fetchSync(){
+  try{const r=await fetch(`https://raw.githubusercontent.com/${SYNC_REPO}/main/${SYNC_PATH}?t=${Date.now()}`,{cache:'no-store'});
+    return r.ok?await r.json():null}catch(e){return null}
+}
+const b64=str=>{const u=new TextEncoder().encode(str);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)};
+const fmtTs=t=>t?new Date(t).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+async function uploadSync(token){
+  const btn=$('btnSync');btn.disabled=true;btn.textContent='동기화 중…';
+  try{
+    const api=`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_PATH}`,H={Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json'};
+    const cur=await fetch(api+'?ref=main',{headers:H,cache:'no-store'});
+    if(cur.status===401||cur.status===403)throw Object.assign(new Error('토큰이 유효하지 않거나 권한이 없습니다'),{auth:true});
+    const sha=cur.ok?(await cur.json()).sha:undefined;
+    const p=buildSyncPayload();
+    const res=await fetch(api,{method:'PUT',headers:{...H,'Content-Type':'application/json'},
+      body:JSON.stringify({message:`data: 동기화 ${fmtTs(p.ts)} (계약 ${p.rows.length}건 · 방문 ${p.visits.length}건)`,content:b64(JSON.stringify(p)),sha,branch:'main'})});
+    if(res.status===401||res.status===403)throw Object.assign(new Error('토큰에 talkis_visit 쓰기 권한이 없습니다'),{auth:true});
+    if(!res.ok)throw new Error(`GitHub 응답 ${res.status}`);
+    syncTs=p.ts;refreshStatus();alert(`동기화 완료 — 계약 ${p.rows.length.toLocaleString()}건 · 방문 ${p.visits.length}건\n다른 PC는 대시보드를 새로 열면 반영됩니다.`);
+  }catch(err){
+    if(err.auth)try{localStorage.removeItem(TOKEN_KEY)}catch(e){}
+    alert('동기화 실패: '+err.message);
+  }finally{btn.disabled=false;btn.textContent='동기화'}
+}
+$('btnSync').onclick=async()=>{
+  if(!hasLocalSource()){
+    // 원본이 없는 PC: 올릴 데이터가 없으니 최신본을 다시 받는다
+    const p=await fetchSync();
+    if(p){applySyncPayload(p);render();alert(`최신 동기화본을 받았습니다 (${fmtTs(p.ts)} 업로드분).\n이 PC에는 원본(공용폴더 일마감)이 없어 올리기는 할 수 없습니다.`)}
+    else alert('받을 동기화본이 없습니다. 원본이 있는 PC에서 먼저 동기화하세요.');
+    return;
+  }
+  let token='';try{token=localStorage.getItem(TOKEN_KEY)||''}catch(e){}
+  if(!token){$('tokInput').value='';$('dlgTok').showModal();return}
+  if(confirm(`이 PC의 데이터를 GitHub(공개 레포)에 올려 다른 PC에서도 보이게 합니다.\n고객키·주문키·비고·설치담당은 올리지 않습니다.\n\n계약 ${contracts.length.toLocaleString()}건 · 방문 대상자 ${visits.length}건 — 진행할까요?`))uploadSync(token);
+};
+$('tokOk').onclick=()=>{
+  const t=$('tokInput').value.trim();if(!t){alert('토큰을 입력하세요.');return}
+  try{localStorage.setItem(TOKEN_KEY,t)}catch(e){}
+  $('dlgTok').close();uploadSync(t);
 };
 $('btnTpl').onclick=()=>{
   downloadVisits([['예: 1788170441450tbcf1uO','','2026-10-15','홍길동',40,50,85000,'Y','Y','주문키 또는 고객키 중 하나만 있어도 됨']],'톡이즈_방문설치대상자_양식.xlsx');
@@ -437,6 +753,7 @@ function downloadVisits(rows,name){
 // 수기 입력
 $('vAdd').onclick=async()=>{
   const key=$('vKey').value.trim();if(!key){alert('주문키 또는 고객키를 입력하세요.');return}
+  if(syncMode){alert('동기화본을 보는 중이라 대상자를 추가할 수 없습니다. 원본 데이터가 있는 PC에서 입력하고 동기화하세요.');return}
   // CMS 주문키/고객키 어느 쪽이든 매칭되도록 양쪽에 넣는다
   await upsertVisits([{ok:key,ck:key,date:$('vDate').value,staff:$('vStaff').value.trim(),travel:+$('vTravel').value||0,install:+$('vInstall').value||0,
     cost:+$('vCost').value||0,wifi:$('vWifi').value,signup:$('vSignup').value,memo:$('vMemo').value.trim()}]);
@@ -452,9 +769,11 @@ async function removeVisit(key){
   visits=visits.filter(v=>vKey(v)!==key);await saveVisits();render();
 }
 async function refreshStatus(){
+  renderUpInfo();
   if($('btnDir').dataset.reauth)return; // 재허용 안내 문구 유지
-  const cf=await kvGet('contractFiles')||[];
-  setStatus(`${dirHandle?'공용폴더 "'+dirHandle.name+'"  |  ':''}계약: ${cf.length?cf.length+'개 파일 · 톡이즈 '+contracts.length.toLocaleString()+'건':'미연결 (기준선은 내장 실측치 사용)'}  |  방문 대상자: ${visits.length}건  |  기준일 ${ymd(asOfDate())||'–'}`);
+  const ci=cinfo;
+  if(syncMode)return setStatus(`동기화본 보기 (${fmtTs(syncTs)} 업로드분) — 계약 ${contracts.length.toLocaleString()}건 · 방문 대상자 ${visits.length}건  |  기준일 ${ymd(asOfDate())||'–'}`);
+  setStatus(`${syncTs?'마지막 동기화 '+fmtTs(syncTs)+'  |  ':''}${dirHandle?'공용폴더 "'+dirHandle.name+'"  |  ':''}계약: ${src.length||wmSrc.length?`일마감 ${ci.daily}개(공용폴더) · 월간누적 ${ci.month}개(${ci.wm?`wm_dash 취소율 탭 ${ci.wm}`:''}${ci.wm&&ci.month>ci.wm?' + ':''}${ci.month>ci.wm?`업로드 ${ci.month-ci.wm}`:''}${ci.month?'':'없음'}) · 톡이즈 ${contracts.length.toLocaleString()}건${ci.daily?'':' (일마감 없음 → 최초계약 기준 불가)'}${ci.month?'':' — wm_dash 취소율 탭에 신청자관리(조회 기간 전체)를 올리거나 여기서 월간누적 업로드'}${ci.unknown?` · 월간 파일 없는 달 ${ci.unknown}건 제외`:''}`:'미연결 (기준선은 내장 실측치 사용)'}  |  방문 대상자: ${visits.length}건  |  기준일 ${ymd(asOfDate())||'–'}`);
 }
 
 // ================= 설정 바인딩 =================
@@ -482,31 +801,56 @@ function asOfDate(){
   let m=null;for(const c of contracts)for(const d of[c.apply,c.ship,c.ret])if(d&&(!m||d>m))m=d;
   return m?toDate(m):null;
 }
+const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]};
+const METRIC={init:'최초계약 기준',post:'배송후 기준'};
 function analyze(){
-  const asOf=asOfDate(),obs=+S.obsDays||14;
-  const matured=c=>c.ship&&asOf&&(asOf-toDate(c.ship))/DAY>=obs;
-  const byOk=new Map(contracts.map(c=>[c.ok,c])),byCk=new Map(contracts.map(c=>[c.ck,c]));
-  const vRows=visits.map(v=>{const c=(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))||null;
-    const st=!c?'miss':!matured(c)?(c.ret?'ng':'wait'):(c.ret?'ng':'ok');return{v,c,st}});
-  const vKeys=new Set(vRows.filter(x=>x.c).map(x=>x.c.ok));
-  const V=vRows.filter(x=>x.c&&matured(x.c)).map(x=>x.c);
-  // 대조군
-  let pool=contracts.filter(c=>!vKeys.has(c.ok)&&matured(c));
-  if(V.length){
-    const sh=V.map(c=>toDate(c.ship).getTime()),pad=(+S.padDays||0)*DAY,lo=Math.min(...sh)-pad,hi=Math.max(...sh)+pad;
-    pool=pool.filter(c=>{const t=toDate(c.ship).getTime();return t>=lo&&t<=hi});
-    if(S.sameRegion){const rs=new Set(V.map(c=>c.region));pool=pool.filter(c=>rs.has(c.region))}
+  const asOf=asOfDate(),obs=+S.waitDays||0;   // 기본 0: wm_dash처럼 기준일까지 들어온 계약 전부 집계 (월간누적이 매일 갱신되므로)
+  const age=d=>asOf&&d?(asOf-toDate(d))/DAY:-1;
+  // 배송 리드타임(신청→배송 중앙값): 배송전취소 건도 다른 계약과 같은 시점까지 기다린 뒤 판정해 최근 구간 과대계상을 막는다
+  const lead=median(contracts.filter(c=>c.ship&&c.apply).map(c=>Math.max(0,(toDate(c.ship)-toDate(c.apply))/DAY)))??3;
+  // 배송전취소가 아니면 배송된 계약으로 본다 (그 뒤 취소 = 배송후취소). 판정 대기를 켜면 배송 후 N일 지난 건만
+  const shipped=c=>!c.pre&&(!obs||(c.ship&&age(c.ship)>=obs));
+  const judged={init:c=>c.initOk&&(c.pre?(!obs||age(c.apply)>=obs+lead):shipped(c)),post:shipped};
+  const isCx={init:c=>c.pre||!!c.ret,post:c=>!!c.ret};
+  const byOk=new Map(contracts.map(c=>[c.ok,c])),byCk=new Map(contracts.filter(c=>c.ck).map(c=>[c.ck,c]));
+  // 동기화본은 키가 없고 계약 순번(ix)으로 연결됨
+  const vRows=visits.map(v=>{const c=(v.ix!=null&&contracts[v.ix])||(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))||null;
+    const st=!c?'miss':c.pre?'pre':c.ret?'ng':!shipped(c)?'wait':'ok';return{v,c,st}});
+  const vSet=new Set(vRows.filter(x=>x.c).map(x=>x.c));
+  const cnt=(arr,cx)=>{const o={};for(const b of BANDS)o[b.k]={n:0,r:0};for(const c of arr){const k=bandOf(c.age);o[k].n++;if(cx(c))o[k].r++}return o};
+  const M={};
+  for(const m of['init','post']){
+    const J=judged[m],X=isCx[m];
+    const V=[...new Set(vRows.filter(x=>x.c&&J(x.c)).map(x=>x.c))];   // 같은 계약을 주문키·고객키로 두 번 넣어도 1건
+    const all=contracts.filter(c=>!vSet.has(c)&&J(c));
+    let pool=all;
+    if(V.length){
+      // 대조군 = 방문군 신청일 ±N일 (wm_dash 취소율은 신청일 축)
+      const t=V.map(c=>toDate(c.apply).getTime()),pad=(+S.padDays||0)*DAY,lo=Math.min(...t)-pad,hi=Math.max(...t)+pad;
+      pool=pool.filter(c=>{const x=toDate(c.apply).getTime();return x>=lo&&x<=hi});
+      if(S.sameRegion){const rs=new Set(V.map(c=>c.region));pool=pool.filter(c=>rs.has(c.region))}
+    }
+    const vb=cnt(V,X),cb=cnt(pool,X),allb=cnt(all,X);
+    const cN=pool.length,cR=pool.filter(X).length,cRate=cN?cR/cN:null;
+    const vN=V.length,vR=V.filter(X).length,vRate=vN?vR/vN:null;
+    let exp=null;
+    if(vN&&cN){let s=0;for(const b of BANDS){const n=vb[b.k].n;if(!n)continue;const q=cb[b.k];s+=n*(q.n>=20?q.r/q.n:cRate)}exp=s/vN}
+    // 권역별: 대조군(방문군 없으면 전체) vs 방문군. 연령보정 기대취소율은 같은 권역 대조군의 연령대별 취소율로 계산
+    const rg={},cp=V.length?pool:all;
+    for(const r of[...REGIONS,'기타']){
+      const pv=V.filter(c=>c.region===r),pc=cp.filter(c=>c.region===r);if(!pv.length&&!pc.length)continue;
+      const pb=cnt(pc,X),cr=pc.filter(X).length,prt=pc.length?cr/pc.length:null;
+      let e=null;if(pv.length&&pc.length){const vbr=cnt(pv,X);let s=0;for(const b of BANDS){const n=vbr[b.k].n;if(!n)continue;const q=pb[b.k];s+=n*(q.n>=20?q.r/q.n:prt)}e=s/pv.length}
+      rg[r]={cn:pc.length,cr,vn:pv.length,vr:pv.filter(X).length,exp:e};
+    }
+    M[m]={key:m,label:METRIC[m],V,pool,all,vb,cb,allb,rg,cN,cR,cRate,vN,vR,vRate,exp,p:vN&&exp?binomCdf(vR,vN,exp):null,ci:wilson(vR,vN),
+      avail:m==='post'||contracts.some(c=>c.initOk)};
   }
-  const cnt=arr=>{const o={};for(const b of BANDS)o[b.k]={n:0,r:0};for(const c of arr){const k=bandOf(c.age);o[k].n++;if(c.ret)o[k].r++}return o};
-  const vb=cnt(V),cb=cnt(pool);
-  const cN=pool.length,cR=pool.filter(c=>c.ret).length,cRate=cN?cR/cN:null;
-  const vN=V.length,vR=V.filter(c=>c.ret).length,vRate=vN?vR/vN:null;
-  // 연령보정 기대취소율
-  let exp=null;
-  if(vN&&cN){let s=0;for(const b of BANDS){const n=vb[b.k].n;if(!n)continue;const cbn=cb[b.k];s+=n*(cbn.n>=20?cbn.r/cbn.n:cRate)}exp=s/vN}
-  const p=vN&&exp?binomCdf(vR,vN,exp):null;
-  return{asOf,obs,vRows,V,pool,vb,cb,cN,cR,cRate,vN,vR,vRate,exp,p,ci:wilson(vR,vN),
-    waiting:vRows.filter(x=>x.st==='wait'||(x.c&&!matured(x.c))).length,missing:vRows.filter(x=>x.st==='miss').length};
+  // wm_dash 표 형식 (연령보정 전): 최초계약·취소·배취·배송후취소
+  const wm=arr=>{const n=arr.length,pre=arr.filter(c=>c.pre).length,post=arr.filter(c=>!c.pre&&c.ret).length;return{n,pre,post,tot:pre+post,ship:n-pre}};
+  // 기본 필드(ROI 등)는 방문이 영향을 주는 배송후 기준
+  return{asOf,obs,lead,vRows,M,...M.post,wmV:wm(M.init.V),wmC:wm(M.init.pool),
+    waiting:vRows.filter(x=>x.st==='wait').length,missing:vRows.filter(x=>x.st==='miss').length};
 }
 function roiCalc(A){
   const base=A.exp,d=base!=null&&A.vRate!=null?base-A.vRate:null,n=A.vN;
@@ -523,8 +867,8 @@ function roiCalc(A){
 }
 // 권역×연령 기준선 (업로드 데이터 우선)
 function baseline(){
-  const asOf=asOfDate(),obs=+S.obsDays||14;
-  const cs=contracts.filter(c=>c.ship&&asOf&&(asOf-toDate(c.ship))/DAY>=obs);
+  const asOf=asOfDate(),obs=+S.waitDays||0;
+  const cs=contracts.filter(c=>!c.pre&&(!obs||(c.ship&&asOf&&(asOf-toDate(c.ship))/DAY>=obs)));
   if(cs.length<200)return BASE;
   const ap=cs.map(c=>toDate(c.apply||c.ship).getTime());
   const months=Math.max(1,(Math.max(...ap)-Math.min(...ap))/DAY/30.44);
@@ -561,7 +905,7 @@ function expansion(A,R,minAge){
 function kpi(l,v,d,dotVar){return`<div class="kpi"><div class="l">${dotVar?`<span class="dot" style="background:var(${dotVar})"></span>`:''}${l}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`}
 function render(){
   const A=analyze(),R=roiCalc(A),E=expansion(A,R,+S.expAge);
-  renderProv();renderSummary(A,R,E);renderCompare(A);renderRoi(A,R);renderExp(A,R,E);renderGuide(A,E);renderLog(A);
+  renderProv();renderSummary(A,R,E);renderHero(A);renderCompare(A);renderRoi(A,R);renderExp(A,R,E);renderGuide(A,E);renderLog(A);
   refreshStatus();
 }
 function provVal(k){return k==='burden'?S[k]+'%':k.startsWith('cap')?S[k]+'건':won(+S[k])}
@@ -574,10 +918,11 @@ function renderProv(){
     if(S.confirmed[k]){tg?.remove();return}
     if(!tg){tg=document.createElement('span');tg.className='prov-tag';tg.innerHTML=`임의값 <button type="button" data-prov="${k}">이 값으로 확정</button>`;lab.insertBefore(tg,el)}
   });
-  $('provCard').innerHTML=open.length?`<div class="card prov-card"><h2>확정 필요한 가정 ${open.length}개</h2>
-    <p class="note" style="margin-top:0">아래 값은 실제 수치 없이 임의로 넣은 것입니다. ③·④ 탭에서 실제 값으로 고치거나, 맞다면 "확정"을 누르세요. 확정 전 ROI·확장 결과는 참고용입니다.</p>
-    <div class="tw"><table><tr><th>항목</th><th>현재 값</th><th>수정 위치</th><th></th></tr>${open.map(k=>`<tr><td>${PROV[k][0]}</td><td>${provVal(k)}</td><td><button class="btn" data-go="${PROV[k][1]}">${PROV[k][1]==='roi'?'③ 테스트 ROI':'④ 전담인력 확장'}</button></td><td><button class="btn" data-prov="${k}">확정</button></td></tr>`).join('')}</table></div></div>`
+  const html=open.length?`<div class="card prov-card"><h2>확정 필요한 비용 가정 ${open.length}개</h2>
+    <p class="note" style="margin-top:0">아래 값은 실제 수치 없이 임의로 넣은 것입니다. 실제 값으로 고치거나, 맞다면 "확정"을 누르세요. 확정 전 ROI·확장 결과는 참고용입니다. (취소율 비교에는 영향 없음)</p>
+    <div class="tw"><table><tr><th>항목</th><th>현재 값</th><th>수정 위치</th><th></th></tr>${open.map(k=>`<tr><td>${PROV[k][0]}</td><td>${provVal(k)}</td><td><button class="btn" data-go="${PROV[k][1]}">${PROV[k][1]==='roi'?'④ 테스트 ROI':'⑤ 전담인력 확장'}</button></td><td><button class="btn" data-prov="${k}">확정</button></td></tr>`).join('')}</table></div></div>`
     :`<p class="note" style="margin:0 0 12px">비용 가정 ${Object.keys(PROV).length}개 모두 확정됨 · <button class="btn" data-reprov="1">다시 임의값으로 표시</button></p>`;
+  document.querySelectorAll('.provBox').forEach(b=>b.innerHTML=html);
 }
 document.addEventListener('click',e=>{
   const t=e.target;if(!t.dataset)return;
@@ -585,42 +930,68 @@ document.addEventListener('click',e=>{
   else if(t.dataset.go)document.querySelector(`#tabs button[data-t="${t.dataset.go}"]`)?.click();
   else if(t.dataset.reprov){S.confirmed={};saveSettings();render()}
 });
+function verdictOf(X){
+  if(X.vN<30)return{cls:'warn',t:'표본 부족'};
+  const d=X.exp-X.vRate;
+  if(d>0&&X.p<0.05)return{cls:'good',t:'효과 확인'};
+  if(d>0&&X.p<0.2)return{cls:'warn',t:'방향성 있음'};
+  return{cls:'bad',t:'효과 미확인'};
+}
+// 상단 토글로 고른 비교 기준 (최초계약 기준은 일마감 파일이 있어야 계산됨 → 없으면 배송후 기준)
+const curMetric=A=>A.M[S.cmpMetric]?.avail?A.M[S.cmpMetric]:A.M.post;
+const METRIC_DESC={init:'(배송전취소 + 배송후취소) ÷ 최초계약 — wm_dash 취소율과 같음',post:'배송후취소 ÷ 배송된 계약 — 방문설치가 영향을 주는 구간'};
+function renderMetricBar(A){
+  const X=curMetric(A);
+  document.querySelectorAll('#metricSeg button').forEach(b=>{
+    b.classList.toggle('on',b.dataset.metric===X.key);
+    b.disabled=b.dataset.metric==='init'&&!A.M.init.avail;
+    b.title=b.disabled?'일마감 신청자관리 파일이 있어야 계산됩니다':'';
+  });
+  $('metricDesc').textContent=METRIC_DESC[X.key];
+}
+$('metricSeg').addEventListener('click',e=>{const m=e.target.closest('button')?.dataset.metric;if(m&&!e.target.disabled&&m!==S.cmpMetric){S.cmpMetric=m;saveSettings();render()}});
 function renderSummary(A,R,E){
-  let cls='idle',t,items=[];
-  const B=E.B,seg75=segStats(B,75);
+  const X=curMetric(A);let cls='idle',t,items=[];
   if(!visits.length){
     t='방문설치 테스트 데이터 대기 중';
-    items=[`현재 택배 기준선: 톡이즈 전체 반품률 <b>${pct(segStats(B,0).rate)}</b>, 75세 이상 <b>${pct(seg75.rate)}</b> (${B.label})`,
-      `75세 이상 고객의 취소를 절반 줄인다고 가정하면, 방문 1건이 <b>${won(seg75.rate*0.5*S.profit+(S.careReplaced?S.careCost:0))}</b> 이하일 때 이익`,
-      `상단 "기록 양식 받기"로 방문 기록을 쌓고, 신청자관리 월간 파일과 함께 올리면 판정이 시작됩니다.`];
-  }else if(A.vN<30){
-    cls='warn';t=`관찰 중 — 판정 가능 ${A.vN}건 / 목표 30건`;
-    items=[`관찰기간(배송 후 ${A.obs}일)이 지나지 않은 건 ${A.waiting}건, 계약 파일에서 못 찾은 건 ${A.missing}건`,
-      A.vN?`현재까지 방문군 취소율 ${pct(A.vRate)} vs 연령보정 기대취소율 ${pct(A.exp)} (참고용, 표본 부족)`:'아직 판정 가능한 건이 없습니다.'];
+    items=[`택배 취소율 ${contracts.length?pct(rateAll(X)):`${pct(segStats(E.B,0).rate)} (${E.B.label})`} — ② 방문 대상자를 입력하면 비교가 시작됩니다.`];
   }else{
-    const eff=R.d>0;
-    if(eff&&A.p<0.05){cls='good';t='효과 확인 — 방문설치가 취소를 줄였습니다'}
-    else if(eff&&A.p<0.2){cls='warn';t='방향성 있음 — 표본을 늘려 재확인 필요'}
-    else{cls='bad';t='효과 미확인 — 택배 대비 취소율 차이가 없습니다'}
-    items=[`방문군 취소율 <b>${pct(A.vRate)}</b> (${A.vR}/${A.vN}건) vs 택배 연령보정 기대 <b>${pct(A.exp)}</b> → 차이 <b>${pp(R.d)}</b> (우연일 확률 ${pct(A.p,1)})`,
-      `테스트 순이익 <b>${won(R.net)}</b> · ROI <b>${pct(R.roi,0)}</b> · 손익분기 방문단가 <b>${won(R.be)}</b> (실제 ${won(R.perVisit)})`,
-      `전담인력 확장 시(${E.seg?bandLabelMin(+S.expAge):''}): 건당 비용 <b>${won(E.perVisit)}</b> / 목표 상한 <b>${won(E.valuePerVisit)}</b> · 월 순이익 <b>${man(E.tot.net)}원</b>`];
+    const line=`방문 ${X.vN}명 중 ${X.vR}명 취소(${pct(X.vRate)}) · 같은 연령 구성의 택배라면 ${pct(X.exp)} · 차이 <b>${pp(X.exp-X.vRate)}</b> · 우연일 확률 ${pct(X.p,1)}`;
+    if(X.vN<30){cls='warn';t=`진행 중 — 방문 ${X.vN} / 30건`;if(X.vN)items.push(line+' (표본 부족, 참고용)')}
+    else{const v=verdictOf(X);cls=v.cls;
+      t=v.t==='효과 확인'?'효과 확인 — 방문설치가 취소를 줄였습니다':v.t==='방향성 있음'?'방향성 있음 — 표본을 늘려 재확인 필요':'효과 미확인 — 택배 대비 차이가 없습니다';
+      items.push(line)}
+    if(A.missing)items.push(`계약 파일에서 못 찾은 방문 대상자 ${A.missing}건 — ② 탭에서 키 확인`);
   }
-  $('verdict').innerHTML=`<div class="verdict ${cls}"><div class="t">${t}</div><ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
-  $('sumKpis').innerHTML=
-    kpi('택배 취소율 (연령보정)',A.exp!=null?pct(A.exp):pct(segStats(B,0).rate),A.exp!=null?`대조군 ${num(A.cN)}건`:'방문군 없음 · 전체 기준선','--s-ship')+
-    kpi('방문설치 취소율',A.vN?pct(A.vRate):'–',A.vN?`${A.vR}/${A.vN}건 · 95% 범위 ${pct(A.ci[0],0)}~${pct(A.ci[1],0)}`:'판정 가능 건 없음','--s-visit')+
-    kpi('취소 방어 (건)',R.defended!=null?R.defended.toFixed(1):'–',R.defended!=null?`방어 이익 ${man(R.gain)}원`:'')+
-    kpi('테스트 ROI',pct(R.roi,0),R.net!=null?`순이익 ${won(R.net)}`:'')+
-    kpi('목표 건당 비용 (확장)',won(E.valuePerVisit),`${bandLabelMin(+S.expAge)} · 감소율 ${pct(E.rel,0)} 가정`)+
-    kpi('확장 시 건당 비용',won(E.perVisit),`월 ${num(E.tot.vol)}건 · 직고용 ${E.tot.heads}명`);
-  const row=(a,b,c)=>`<tr><td>${a}</td><td>${b}</td><td style="text-align:left;color:var(--text-2)">${c}</td></tr>`;
-  $('sumTable').innerHTML=`<table><tr><th>항목</th><th>값</th><th style="text-align:left">의미</th></tr>
-    ${row('취소 1건 방어 이익',won(S.profit),'고정 가정')}
-    ${row('전화 학습케어 비용',won(S.careCost),S.careReplaced?'방문이 대체 → 절감액으로 반영':'대체하지 않음 → 반영 안 함')}
-    ${row('손익분기 방문단가 (테스트)',won(R.be),'= 줄어든 취소율 × 100만 + 학습케어 절감')}
-    ${row('1인 월 손익분기 처리건수',E.beVisitsPerHead?E.beVisitsPerHead.toFixed(0)+'건':'–',`설치기사 1인 월 비용 ${won(E.perHead)} ÷ 목표 건당 비용`)}
-    ${row('확장 연 순이익',man(E.tot.net*12)+'원',`${bandLabelMin(+S.expAge)} 대상, 방문 비율 ${S.coverage}%`)}</table>`;
+  $('verdict').innerHTML=`<div class="verdict ${cls}"><div class="t">${t}</div>${items.length?`<ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}</div>`;
+}
+const rateAll=X=>{let n=0,r=0;for(const b of BANDS){n+=X.allb[b.k].n;r+=X.allb[b.k].r}return n?r/n:null};
+// 핵심 비교: 택배(연령보정) vs 방문설치 취소율을 가장 크게
+function renderHero(A){
+  renderMetricBar(A);
+  const B=baseline(),X=curMetric(A);
+  const has=X.vN>0,diff=has&&X.exp!=null?X.exp-X.vRate:null;
+  const dCol=diff==null?'var(--muted)':diff>0?'var(--good)':diff<0?'var(--bad)':'var(--text-2)';
+  const base=contracts.length?rateAll(X):segStats(B,0).rate;
+  const n=X.vN,pr=Math.min(1,n/30),pre=A.vRows.filter(x=>x.st==='pre').length;
+  $('hero').innerHTML=`<div class="hero">
+    <div class="side ship"><div class="l"><span class="dot" style="background:var(--s-ship)"></span>택배 취소율${has?' (연령보정)':''}</div>
+      <div class="big">${has?pct(X.exp):pct(base)}</div>
+      <div class="d">${has?`같은 기간 택배 ${num(X.cN)}건 · 보정 전 ${pct(X.cRate)}`:contracts.length?'톡이즈 계약 전체':B.label}</div></div>
+    <div class="mid"><div class="d">차이</div><div class="diff" style="color:${dCol}">${diff==null?'vs':pp(diff)}</div>
+      <div class="d">${X.p!=null?`우연일 확률 ${pct(X.p,1)}`:''}</div></div>
+    <div class="side visit"><div class="l"><span class="dot" style="background:var(--s-visit)"></span>방문설치 취소율</div>
+      <div class="big">${has?pct(X.vRate):'–'}</div>
+      <div class="d">${has?`${X.vR}/${X.vN}건 취소 · 95% 범위 ${pct(X.ci[0],0)}~${pct(X.ci[1],0)}`:'방문 대상자 입력 후 표시'}</div></div>
+  </div>
+  <div class="prog"><div class="bar"><i style="width:${(pr*100).toFixed(0)}%"></i></div>
+    <div class="d">방문 <b>${n}</b> / 목표 30건${pre?` · 배송전취소 ${pre}건`:''}${A.missing?` · 계약 미매칭 ${A.missing}건`:''}${A.obs?` · 판정 대기 ${A.waiting}건`:''}</div></div>`;
+  // 개요 표 (wm_dash 형식, 연령보정 전)
+  const W=[['택배 대조군',A.wmC],['방문설치',A.wmV]];
+  $('wmTable').innerHTML=A.M.init.avail?`<table><tr><th>구분</th><th>최초 계약수</th><th>배송전취소</th><th>배송후취소</th><th>취소수</th><th>취소율<br><span style="font-weight:400">(÷최초계약)</span></th><th>배송된 계약</th><th>배송후 취소율<br><span style="font-weight:400">(÷배송된 계약)</span></th></tr>${W.map(([l,w])=>{const r=(a,b)=>b?pct(a/b,2):'–';
+      return`<tr><td>${l}</td><td>${num(w.n)}</td><td>${num(w.pre)}</td><td>${num(w.post)}</td><td>${num(w.tot)}</td><td>${X.key==='init'?'<b>':''}${r(w.tot,w.n)}${X.key==='init'?'</b>':''}</td><td>${num(w.ship)}</td><td>${X.key==='post'?'<b>':''}${r(w.post,w.ship)}${X.key==='post'?'</b>':''}</td></tr>`}).join('')}</table>
+    <p class="note">연령보정 전 숫자 · 택배 대조군 = 방문군 신청일 ±${S.padDays}일</p>`
+    :'<p class="note" style="margin:0">일마감 신청자관리 파일이 없어 표를 만들 수 없습니다.</p>';
 }
 const bandLabelMin=a=>a?`${a}세 이상`:'전 연령';
 
@@ -633,38 +1004,64 @@ function chartBase(){
 }
 function renderCompare(A){
   const useBase=!contracts.length;const B=baseline();
+  const X=curMetric(A);
+  $('ageTitle').textContent=`연령대별 취소율 — 택배 vs 방문설치${useBase?' (내장 기준선)':''}`;
   const rateOf=o=>o.n?o.r/o.n:null;
   let shipRates,visitRates=null,shipN;
   if(useBase){shipRates=BANDS.map(b=>rateOf(segBand(B,b.k)));shipN=BANDS.map(b=>segBand(B,b.k).n)}
-  else{const src=A.vN?A.cb:(()=>{const o={};for(const b of BANDS)o[b.k]={n:0,r:0};for(const c of contracts.filter(c=>c.ship&&A.asOf&&(A.asOf-toDate(c.ship))/DAY>=A.obs)){const k=bandOf(c.age);o[k].n++;if(c.ret)o[k].r++}return o})();
-    shipRates=BANDS.map(b=>rateOf(src[b.k]));shipN=BANDS.map(b=>src[b.k].n);if(A.vN)visitRates=BANDS.map(b=>rateOf(A.vb[b.k]))}
-  $('cmpKpis').innerHTML=
-    kpi('택배 대조군',A.vN?pct(A.cRate):'–',A.vN?`${num(A.cR)}/${num(A.cN)}건 (보정 전)`:'방문군이 생기면 계산','--s-ship')+
-    kpi('연령보정 기대취소율',pct(A.exp),'방문군 연령 구성 기준','--s-ship')+
-    kpi('방문설치군',pct(A.vRate),A.vN?`${A.vR}/${A.vN}건`:'','--s-visit')+
-    kpi('차이',pp(A.exp!=null&&A.vRate!=null?A.exp-A.vRate:null),A.p!=null?`우연일 확률 ${pct(A.p,1)} (단측 이항검정)`:'');
+  else{const src=X.vN?X.cb:X.allb;
+    shipRates=BANDS.map(b=>rateOf(src[b.k]));shipN=BANDS.map(b=>src[b.k].n);if(X.vN)visitRates=BANDS.map(b=>rateOf(X.vb[b.k]))}
   const pctTick={callback:v=>(v*100).toFixed(0)+'%'};
   const ds=[{label:'택배',data:shipRates,backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:28}];
   if(visitRates)ds.push({label:'방문설치',data:visitRates,backgroundColor:css('--s-visit'),borderRadius:4,maxBarThickness:28});
   const o1=chartBase();o1.scales.y.ticks={...o1.scales.y.ticks,...pctTick};o1.plugins.tooltip={callbacks:{label:c=>`${c.dataset.label} ${pct(c.raw)}`}};
   if(!visitRates)o1.plugins.legend.display=false;
   mkChart('cAge',{type:'bar',data:{labels:BANDS.map(b=>b.l),datasets:ds},options:o1});
-  // 반품 경과일
+  // 권역별 택배 vs 방문
+  $('regTitle').textContent=`권역별 취소율 — 택배 vs 방문설치${useBase?' (내장 기준선)':''}`;
+  const RG=[...REGIONS,'기타'];
+  let rRows;
+  if(useBase)rRows=REGIONS.map(r=>{const a=segStats(B,0,r);return{r,cn:a.n,crt:a.rate,vn:0,vr:0,exp:null}});
+  else rRows=RG.filter(r=>X.rg[r]).map(r=>{const g=X.rg[r];return{r,cn:g.cn,crt:g.cn?g.cr/g.cn:null,vn:g.vn,vr:g.vr,exp:g.exp}});
+  const hasV=rRows.some(x=>x.vn);
+  const dsR=[{label:'택배',data:rRows.map(x=>x.crt),backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:28}];
+  if(hasV)dsR.push({label:'방문설치',data:rRows.map(x=>x.vn?x.vr/x.vn:null),backgroundColor:css('--s-visit'),borderRadius:4,maxBarThickness:28});
+  const o3=chartBase();o3.scales.y.ticks={...o3.scales.y.ticks,...pctTick};o3.plugins.tooltip={callbacks:{label:c=>`${c.dataset.label} ${pct(c.raw)}`}};
+  if(!hasV)o3.plugins.legend.display=false;
+  mkChart('cReg',{type:'bar',data:{labels:rRows.map(x=>x.r),datasets:dsR},options:o3});
+  $('regCmp').innerHTML=`<table><tr><th>권역</th><th>택배 건수</th><th>택배 취소율</th><th>방문 건수</th><th>방문 취소</th><th>방문 취소율</th><th>연령보정 기대취소율</th><th>차이 (기대 − 방문)</th></tr>${rRows.map(x=>{
+    const vrt=x.vn?x.vr/x.vn:null,diff=vrt!=null&&x.exp!=null?x.exp-vrt:null;
+    return`<tr><td>${x.r}</td><td>${num(x.cn)}</td><td>${pct(x.crt)}</td><td>${x.vn||'–'}</td><td>${x.vn?x.vr:'–'}</td><td>${pct(vrt)}</td><td>${pct(x.exp)}</td><td class="${cls(diff)}">${pp(diff)}${x.vn&&x.vn<10?' <span style="color:var(--muted)">(방문 10건 미만)</span>':''}</td></tr>`}).join('')}</table>
+    <p class="note">${useBase?`신청자관리 파일 미업로드 — ${B.label} 기준.`:'연령보정 기대취소율 = 그 권역 방문 고객의 연령 구성 기준. 권역별 방문 건수가 적어 참고용입니다.'}</p>`;
+  // 반품까지 걸린 일수 — 택배 vs 방문 (배송후 기준: 배송된 계약 대비 구간별 반품 비율)
   const bins=[['0~3일',0,3],['4~7일',4,7],['8~14일',8,14],['15~30일',15,30],['31일+',31,1e9]];
-  const counts=bins.map(()=>0);
-  for(const c of contracts)if(c.ret&&c.ship){const d=Math.round((toDate(c.ret)-toDate(c.ship))/DAY);const i=bins.findIndex(b=>d>=b[1]&&d<=b[2]);if(i>=0)counts[i]++}
-  const known=contracts.length?counts:[null,375,42,14,0]; // 미업로드: 3~9월 실측 (0~7일 375건)
-  const labels=contracts.length?bins.map(b=>b[0]):['0~3일','0~7일','8~14일','15~30일','31일+'];
-  const o2=chartBase();o2.plugins.legend.display=false;o2.plugins.tooltip={callbacks:{label:c=>`${num(c.raw)}건`}};
-  mkChart('cDays',{type:'bar',data:{labels,datasets:[{label:'반품 건수',data:known,backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:36}]},options:o2});
+  const P=A.M.post,shipG=P.vN?P.pool:P.all,visG=P.V;
+  const dist=g=>{const c=bins.map(()=>0);let nd=0;for(const x of g)if(x.ret){if(!x.ship){nd++;continue}const d=Math.round((toDate(x.ret)-toDate(x.ship))/DAY);const i=bins.findIndex(b=>d>=b[1]&&d<=b[2]);if(i>=0)c[i]++;else nd++}return{c,n:g.length,r:g.filter(x=>x.ret).length,nd}};
+  const o2=chartBase();
+  if(!contracts.length){   // 미업로드: 3~9월 실측 건수
+    o2.plugins.legend.display=false;o2.plugins.tooltip={callbacks:{label:c=>`${num(c.raw)}건`}};
+    $('daysTitle').textContent='반품까지 걸린 일수 (내장 실측, 건수)';
+    mkChart('cDays',{type:'bar',data:{labels:['0~3일','0~7일','8~14일','15~30일','31일+'],datasets:[{label:'반품 건수',data:[null,375,42,14,0],backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:36}]},options:o2});
+    $('daysTable').innerHTML='<p class="note">신청자관리 파일 미업로드 — 26년 3~9월 톡이즈 실측 (배송일 → 반품일).</p>';
+  }else{
+    const Sd=dist(shipG),Vd=visG.length?dist(visG):null;
+    $('daysTitle').textContent='반품까지 걸린 일수 — 택배 vs 방문설치 (배송된 계약 대비)';
+    o2.scales.y.ticks={...o2.scales.y.ticks,...pctTick};o2.plugins.tooltip={callbacks:{label:c=>`${c.dataset.label} ${pct(c.raw)}`}};
+    const dsD=[{label:'택배',data:Sd.c.map(v=>Sd.n?v/Sd.n:null),backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:28}];
+    if(Vd)dsD.push({label:'방문설치',data:Vd.c.map(v=>v/Vd.n),backgroundColor:css('--s-visit'),borderRadius:4,maxBarThickness:28});
+    else o2.plugins.legend.display=false;
+    mkChart('cDays',{type:'bar',data:{labels:bins.map(b=>b[0]),datasets:dsD},options:o2});
+    const share=(v,d)=>d.r?pct(v/d.r):'–';
+    $('daysTable').innerHTML=`<table><tr><th>배송 후</th><th>택배 반품</th><th>택배 (배송 대비)</th><th>택배 (반품 중 비중)</th><th>방문 반품</th><th>방문 (배송 대비)</th><th>방문 (반품 중 비중)</th></tr>${bins.map((b,i)=>
+      `<tr><td>${b[0]}</td><td>${num(Sd.c[i])}</td><td>${pct(Sd.n?Sd.c[i]/Sd.n:null)}</td><td>${share(Sd.c[i],Sd)}</td><td>${Vd?Vd.c[i]:'–'}</td><td>${Vd?pct(Vd.c[i]/Vd.n):'–'}</td><td>${Vd?share(Vd.c[i],Vd):'–'}</td></tr>`).join('')}
+      <tr><th>합계</th><th>${num(Sd.r)}</th><th>${pct(Sd.n?Sd.r/Sd.n:null)}</th><th>${Sd.r?'100%':'–'}</th><th>${Vd?Vd.r:'–'}</th><th>${Vd?pct(Vd.r/Vd.n):'–'}</th><th>${Vd&&Vd.r?'100%':'–'}</th></tr></table>
+      <p class="note">배송후 반품만 해당되어 비교 기준과 상관없이 같습니다 · 연령보정 전${Sd.nd||(Vd&&Vd.nd)?` · 배송일 없는 반품 ${Sd.nd+(Vd?Vd.nd:0)}건은 합계에만 포함`:''}</p>`;
+  }
   // 표
   $('cmpTable').innerHTML=`<table><tr><th>연령대</th><th>택배 건수</th><th>택배 취소율</th><th>방문 건수</th><th>방문 취소</th><th>방문 취소율</th><th>차이</th></tr>${BANDS.map((b,i)=>{
-    const vn=A.vb[b.k].n,vr=A.vb[b.k].r,vrt=vn?vr/vn:null,diff=vrt!=null&&shipRates[i]!=null?shipRates[i]-vrt:null;
+    const vn=X.vb[b.k].n,vr=X.vb[b.k].r,vrt=vn?vr/vn:null,diff=vrt!=null&&shipRates[i]!=null?shipRates[i]-vrt:null;
     return`<tr><td>${b.l}</td><td>${num(shipN[i])}</td><td>${pct(shipRates[i])}</td><td>${vn||'–'}</td><td>${vn?vr:'–'}</td><td>${pct(vrt)}</td><td class="${cls(diff)}">${pp(diff)}</td></tr>`}).join('')}</table>
-    ${useBase?`<p class="note">신청자관리 파일 미업로드 — ${B.label} 기준으로 표시 중</p>`:''}`;
-  $('regTable').innerHTML=`<table><tr><th>권역</th><th>월 평균 계약</th><th>전체 취소율</th><th>75세 이상 월 계약</th><th>75세 이상 취소율</th></tr>${REGIONS.map(rg=>{const a=segStats(B,0,rg),b=segStats(B,75,rg);
-    return`<tr><td>${rg}</td><td>${a.monthly.toFixed(0)}</td><td>${pct(a.rate)}</td><td>${b.monthly.toFixed(0)}</td><td>${pct(b.rate)}${b.n<60?' <span style="color:var(--muted)">(표본 적음)</span>':''}</td></tr>`}).join('')}</table><p class="note">${B.label} · 반품일(AQ) 기준. 배송 전 취소(월간 파일에서 행이 사라지는 건)는 방문설치 전에 일어나므로 비교에서 빠져도 무방합니다.</p>`;
-}
+    ${useBase?`<p class="note">신청자관리 파일 미업로드 — ${B.label} 기준으로 표시 중</p>`:''}`;}
 function segBand(B,k){let n=0,r=0;for(const[key,[a,b]]of Object.entries(B.data)){if(+key.split('|')[1]===k){n+=a;r+=b}}return{n,r}}
 
 function renderRoi(A,R){
@@ -712,16 +1109,17 @@ function renderGuide(A,E){
   $('sigBox').innerHTML=`<p style="margin-top:0">택배 취소율이 10% 안팎이면 30건 중 원래 취소될 건은 3~4건뿐입니다. 그래서 <b>30건 테스트는 "효과가 크면 보이고, 작으면 안 보이는" 수준</b>입니다. 대상 연령을 높이면 원래 취소율이 높아져 판별력이 올라갑니다.</p>
   <table><tr><th>테스트 대상</th><th>택배 취소율</th><th>30건 중 예상 취소</th><th>효과 확인 (95%) 기준</th><th>방향성 (90%) 기준</th><th>"취소 절반" 확인에 필요한 건수</th></tr>
   ${rows.map(r=>`<tr${r.a===75?' style="font-weight:700"':''}><td>${bandLabelMin(r.a)}</td><td>${pct(r.p0)}</td><td>${r.exp.toFixed(1)}건</td><td>${r.k05<0?'불가':r.k05+'건 이하'}</td><td>${r.k10<0?'불가':r.k10+'건 이하'}</td><td>${num(r.need)}건</td></tr>`).join('')}</table>
-  <p class="note">읽는 법: 75세 이상 대상이면 30건 중 취소가 표의 기준 이하일 때 "우연이 아니다"라고 말할 수 있습니다. 30건으로 결론이 애매하면 ROI 판단은 "취소율 감소폭이 이 정도면 남는다"(③ 민감도 표)로 하고, 확장은 1~2개 권역 파일럿으로 표본을 더 쌓는 것을 권장합니다.</p>`;
+  <p class="note">읽는 법: 75세 이상 대상이면 30건 중 취소가 표의 기준 이하일 때 "우연이 아니다"라고 말할 수 있습니다. 30건으로 결론이 애매하면 ROI 판단은 "취소율 감소폭이 이 정도면 남는다"(④ 민감도 표)로 하고, 확장은 1~2개 권역 파일럿으로 표본을 더 쌓는 것을 권장합니다.</p>`;
 }
 function renderLog(A){
   if(!A.vRows.length){$('logTable').innerHTML='<p class="note">위에서 직접 입력하거나 대상자 엑셀을 업로드하면 건별 상태가 표시됩니다.</p>';return}
-  const tag={ok:'<span class="tag ok">유지</span>',ng:'<span class="tag ng">취소</span>',wait:'<span class="tag wait">관찰 중</span>',miss:'<span class="tag miss">계약 미매칭</span>'};
+  const tag={ok:'<span class="tag ok">유지</span>',pre:'<span class="tag ng">배송전취소</span>',ng:'<span class="tag ng">취소</span>',wait:'<span class="tag wait">관찰 중</span>',miss:'<span class="tag miss">계약 미매칭</span>'};
   const mask=s=>s?s.slice(0,6)+'…'+s.slice(-3):'';
   $('logTable').innerHTML=`<table><tr><th>주문키</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${A.vRows.map(({v,c,st})=>{
     const el=c&&c.ship&&A.asOf?Math.round((A.asOf-toDate(c.ship))/DAY)+'일':'–';
-    return`<tr><td>${mask(v.ok||v.ck)}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td><button class="btn" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button></td></tr>`}).join('')}</table>
-  <p class="note">계약 미매칭 = 공용폴더의 신청자관리 파일에서 주문키/고객키를 못 찾은 건 (해당 월 파일 누락, 키 오타, 배송 전 취소로 행이 사라진 경우).</p>`;
+    return`<tr><td>${mask(v.ok||v.ck)||esc(v.sid)}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td>${syncMode?'':`<button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
+  ${syncMode?'<p class="note">동기화본 보기 — 고객키·주문키·비고·설치담당은 공개 동기화 파일에 넣지 않아 "방문 n"으로 표시됩니다. 수정은 원본 데이터가 있는 PC에서 하고 동기화하세요.</p>':''}
+  <p class="note">배송전취소 = 일마감에는 있는데 월간누적에서 사라진 건 (최초계약 기준에서만 취소로 셈). 계약 미매칭 = 신청자관리 파일에서 주문키/고객키를 못 찾은 건 (해당 일마감·월간 파일 누락, 키 오타).</p>`;
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 $('logTable').addEventListener('click',e=>{const k=e.target.dataset?.del;if(k)removeVisit(k)});
@@ -730,18 +1128,28 @@ $('logTable').addEventListener('click',e=>{const k=e.target.dataset?.del;if(k)re
 (async()=>{
   bindInputs();
   try{const t=localStorage.getItem('talkisVisit.tab');if(t)document.querySelector(`#tabs button[data-t="${t}"]`)?.click()}catch(e){}
-  try{contracts=await kvGet('contracts')||[];visits=await kvGet('visits')||[]}catch(e){}
+  try{src=await kvGet('src')||[];
+    try{await loadWmDash(true)}catch(e){}
+    if(src.length||wmSrc.length)buildContracts();else contracts=(await kvGet('contracts')||[]).map(c=>({...c,pre:false,initOk:false}));  // 이전 버전 데이터
+    visits=await kvGet('visits')||[]}catch(e){}
+  // 이 PC에 원본(공용폴더 일마감)이 없으면 GitHub 동기화본을 받아 보기 전용으로 표시
+  if(!hasLocalSource()){const p=await fetchSync();if(p)applySyncPayload(p)}
+  else fetchSync().then(p=>{if(p){syncTs=p.ts||0;refreshStatus()}});   // 마지막 동기화 시각 표시용
   // 저장된 공용폴더가 있으면: 권한이 살아 있으면 바로 다시 읽고, 아니면 버튼으로 재허용 유도
   try{
     dirHandle=await kvGet('dirHandle')||null;
     if(dirHandle&&await dirHandle.queryPermission({mode:'read'})!=='granted'){
       const b=$('btnDir');b.dataset.reauth='1';b.textContent=`공용폴더 "${dirHandle.name}" 다시 열기`;
-      setStatus('저장된 데이터로 표시 중 — 최신 파일을 반영하려면 "공용폴더 다시 열기"를 눌러 허용하세요.');
+      setStatus('저장된 데이터로 표시 중 — 최신 파일을 반영하려면 "파일 업로드" → "공용폴더 다시 열기"를 눌러 허용하세요.');
     }
   }catch(e){dirHandle=null}
   render();
   if(dirHandle&&!$('btnDir').dataset.reauth)loadFolder();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);
+  // wm_dash 탭에서 월간누적을 새로 올리고 돌아오면 자동 반영 (파일 구성이 바뀐 경우만 다시 읽음)
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.visibilityState==='visible'&&hasLocalSource()&&await loadWmDash(false)){buildContracts();render()}
+  });
 })();
 </script>
 </body>
