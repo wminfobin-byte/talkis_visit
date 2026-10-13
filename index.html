@@ -556,7 +556,8 @@ async function ingestContracts(items,fromDir){
   let list=src.filter(s=>!fromDir||s.up);
   for(const it of items){const f=it.file||it;const kind=fromDir?contractKind(it.folder,f.name):'month';
     if(fromDir&&kind!=='daily')continue;
-    const rows=parseContracts(await readRows(f)),nx={name:f.name,kind,up:!fromDir,mod:f.lastModified||0,rows};
+    // 업로드 파일 순서 = 올린 시각 (wm_dash와 같음). 파일 수정 시각을 쓰면 테스트로 고친 파일 뒤에 원본을 다시 올려도 원본이 지게 됨
+    const rows=parseContracts(await readRows(f)),nx={name:f.name,kind,up:!fromDir,mod:fromDir?(f.lastModified||0):Date.now(),rows};
     if(kind==='month'){const[lo,hi]=applyRange(rows);
       list=list.filter(s=>{if(!s.up||s.kind!=='month')return true;const[a,b]=applyRange(s.rows);return!(lo&&a&&a>=lo&&b<=hi&&(s.mod||0)<=nx.mod)})}
     else list=list.filter(s=>!(s.kind===kind&&s.name===f.name));
