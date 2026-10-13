@@ -236,8 +236,6 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
   <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
     <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
-  <div class="card"><h2 id="regTitle">권역별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cReg"></canvas></div>
-    <div class="tw" id="regCmp" style="margin-top:12px"></div></div>
   <div class="card"><h2 id="daysTitle">반품까지 걸린 일수 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
     <div class="tw" id="daysTable" style="margin-top:12px"></div></div>
 </section>
@@ -277,17 +275,17 @@ body:not(.authed) .auth-only{display:none!important}
       <label>방문설치 대상 연령<select data-k="expAge"><option value="0">전 연령</option><option value="60">60세 이상</option><option value="65">65세 이상</option><option value="70">70세 이상</option><option value="75">75세 이상</option><option value="80">80세 이상</option></select></label>
       <label>대상 중 방문 실시 비율 (%)<input type="number" data-k="coverage" min="0" max="100"></label>
       <label>취소 감소율 (상대, %) — 비우면 테스트 결과 사용<input type="number" data-k="relRed" placeholder="테스트 결과 사용"></label>
-      <label>설치기사 1인 월 급여 (원)<input type="number" data-k="salary" step="100000"></label>
-      <label>4대보험·퇴직충당 (급여 대비 %)<input type="number" data-k="burden"></label>
-      <label>차량·유류·통행료 (1인 월, 원)<input type="number" data-k="carCost" step="50000"></label>
-      <label>통신·장비·기타 (1인 월, 원)<input type="number" data-k="etcCost" step="10000"></label>
+      <label class="inhouse-only">설치기사 1인 월 급여 (원)<input type="number" data-k="salary" step="100000"></label>
+      <label class="inhouse-only">4대보험·퇴직충당 (급여 대비 %)<input type="number" data-k="burden"></label>
+      <label class="inhouse-only">차량·유류·통행료 (1인 월, 원)<input type="number" data-k="carCost" step="50000"></label>
+      <label class="inhouse-only">통신·장비·기타 (1인 월, 원)<input type="number" data-k="etcCost" step="10000"></label>
       <label>1일 방문 가능 건수 — 수도권<input type="number" data-k="capMetro" step="0.5"></label>
       <label>1일 방문 가능 건수 — 지방<input type="number" data-k="capLocal" step="0.5"></label>
       <label>월 근무일<input type="number" data-k="workDays"></label>
       <label>가동률 (%) — 일정 공백·재방문 감안<input type="number" data-k="util"></label>
       <label>본사 관리·배차 고정비 (월, 원)<input type="number" data-k="hqCost" step="100000"></label>
-      <label>운영 방식<select data-k="expMode"><option value="inhouse">전 권역 직고용</option><option value="auto">권역별 직고용·외주 중 싼 쪽</option></select></label>
-      <label>외주(위탁) 방문 단가 (원/건) — 시장 견적 받아 입력<input type="number" data-k="outCost" step="5000"></label>
+      <label>운영 방식<select data-k="expMode"><option value="piece">설치기사 건당 지급</option><option value="inhouse">전 권역 직고용 (월급)</option><option value="auto">권역별 직고용·건당 중 싼 쪽</option></select></label>
+      <label>설치기사 건당 지급액 (원/건)<input type="number" data-k="outCost" step="5000"></label>
     </div>
     <p class="note">권역별 월 물량은 업로드한 신청자관리 파일(없으면 내장된 26년 6~9월 실측치)에서 계산합니다. 취소율은 권역별 표본이 작아 흔들리므로 <b>대상 연령 전체의 취소율</b>을 공통으로 씁니다.</p>
   </div>
@@ -369,16 +367,20 @@ const CT={orderKey:['주문키',2],custKey:['고객키',3],manager:['담당자',
 // 파일 미업로드 시 기준선: 2026년 6~9월 톡이즈 계약 실측 (권역|연령대 → [계약, 반품])
 const BASE={months:4,label:'내장 기준선 (26년 6~9월 실측)',data:{"수도권|0":[146,6],"제주|75":[5,1],"부울경|60":[45,4],"수도권|70":[347,33],"수도권|65":[317,28],"호남|65":[52,4],"수도권|60":[151,11],"수도권|75":[306,52],"대구경북|70":[43,1],"부울경|65":[92,12],"충청|70":[61,4],"부울경|75":[65,9],"부울경|70":[84,14],"수도권|80":[258,47],"충청|65":[72,6],"호남|0":[27,0],"부울경|80":[51,12],"충청|80":[40,9],"충청|75":[45,5],"제주|0":[7,0],"호남|80":[31,7],"강원|75":[8,2],"대구경북|80":[30,6],"부울경|0":[43,2],"강원|65":[26,2],"호남|70":[44,6],"호남|75":[36,9],"충청|0":[38,3],"충청|60":[37,2],"대구경북|75":[24,4],"대구경북|65":[46,2],"제주|70":[10,1],"대구경북|0":[26,3],"호남|60":[28,3],"대구경북|60":[26,1],"강원|70":[22,1],"강원|80":[14,4],"강원|0":[8,0],"강원|60":[9,1],"제주|60":[5,0],"제주|65":[5,2],"제주|80":[5,0]}};
 const DEFAULTS={waitDays:0,padDays:30,asOf:'',sameRegion:false,
-  profit:1000000,careCost:20000,careReplaced:true,visitCost:80000,testFixed:0,
+  profit:1000000,careCost:20000,careReplaced:true,visitCost:25000,testFixed:0,
   cmpMetric:'init',expAge:'75',coverage:100,relRed:'',salary:3000000,burden:20,carCost:700000,etcCost:100000,
-  capMetro:5,capLocal:3.5,workDays:21,util:80,hqCost:0,outCost:60000,expMode:"inhouse"};
+  capMetro:5,capLocal:3.5,workDays:21,util:80,hqCost:0,outCost:25000,expMode:"piece"};
 // 실제 수치 없이 임의로 넣은 가정 — 확정 전까지 화면에 "임의값"으로 표시
-const PROV={visitCost:['방문 1건 비용','roi'],salary:['설치기사 1인 월 급여','exp'],burden:['4대보험·퇴직충당 (%)','exp'],
-  carCost:['차량·유류·통행료 (월)','exp'],capMetro:['1일 방문 건수 — 수도권','exp'],capLocal:['1일 방문 건수 — 지방','exp'],outCost:['외주 방문 단가','exp']};
+// 2026-10-13 사용자 결정: 설치기사 건당 지급 25,000원(테스트 방문 1건 비용도 25,000원), 1일 방문 건수 수도권 5·지방 3.5 유지
+//  → 임의값 없음. 새로 근거 없는 가정을 넣으면 여기에 [이름, 탭('roi'|'exp')]로 추가하면 "임의값"으로 표시됨
+const PROV={};
 const LS_KEY='talkisVisit.settings';
 let S={...DEFAULTS};
 try{Object.assign(S,JSON.parse(localStorage.getItem(LS_KEY)||'{}'))}catch(e){}
 S.confirmed={...(S.confirmed||{})};
+// 설정 v2 (2026-10-13): 확장 기본 = 건당 지급 25,000원. 예전에 저장된 직고용/외주 6만원 설정은 새 기본값으로 바꿈
+// 설정 v3: 테스트 방문 1건 비용 8만 → 2.5만
+if((S.ver||0)<3){if((S.ver||0)<2){S.expMode=DEFAULTS.expMode;S.outCost=DEFAULTS.outCost}S.visitCost=DEFAULTS.visitCost;S.ver=3;try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
 function saveSettings(){try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
 function confirmProv(k,on=true){if(on)S.confirmed[k]=true;else delete S.confirmed[k];saveSettings();render()}
 
@@ -927,12 +929,12 @@ function expansion(A,R,minAge){
     const cap=(METRO.has(rg)?S.capMetro:S.capLocal)*S.workDays*S.util/100;
     const heads=vol>0?Math.ceil(vol/cap):0;
     const inCost=heads*perHead,inPer=vol?inCost/vol:null,outTot=vol*S.outCost;
-    const mode=vol===0?'-':(S.expMode==='auto'&&outTot<inCost)?'외주':'직고용';
+    const mode=vol===0?'-':S.expMode==='piece'?'건당':(S.expMode==='auto'&&outTot<inCost)?'건당':'직고용';
     const cost=mode==='직고용'?inCost:outTot;
     const defended=vol*seg.rate*rel;
     return{rg,vol,rawRate:st.rate,heads,cap,inCost,inPer,outTot,mode,cost,defended,net:defended*S.profit+vol*care-cost};
   });
-  const tot=rows.reduce((a,x)=>({vol:a.vol+x.vol,heads:a.heads+(x.mode==='직고용'?x.heads:0),cost:a.cost+x.cost,defended:a.defended+x.defended,net:a.net+x.net}),{vol:0,heads:0,cost:0,defended:0,net:0});
+  const tot=rows.reduce((a,x)=>({vol:a.vol+x.vol,heads:a.heads+(x.mode==='-'?0:x.heads),cost:a.cost+x.cost,defended:a.defended+x.defended,net:a.net+x.net}),{vol:0,heads:0,cost:0,defended:0,net:0});
   tot.cost+=+S.hqCost||0;tot.net-=+S.hqCost||0;
   return{B,seg,rel,care,valuePerVisit,perHead,rows,tot,perVisit:tot.vol?tot.cost/tot.vol:null,
     beVisitsPerHead:valuePerVisit>0?perHead/valuePerVisit:null};
@@ -966,7 +968,7 @@ function renderProv(){
   const html=open.length?`<div class="card prov-card"><h2>확정 필요한 비용 가정 ${open.length}개</h2>
     <p class="note" style="margin-top:0">아래 값은 실제 수치 없이 임의로 넣은 것입니다. 실제 값으로 고치거나, 맞다면 "확정"을 누르세요. 확정 전 ROI·확장 결과는 참고용입니다. (취소율 비교에는 영향 없음)</p>
     <div class="tw"><table><tr><th>항목</th><th>현재 값</th><th>수정 위치</th><th></th></tr>${open.map(k=>`<tr><td>${PROV[k][0]}</td><td>${provVal(k)}</td><td><button class="btn" data-go="${PROV[k][1]}">${PROV[k][1]==='roi'?'④ 테스트 ROI':'⑤ 전담인력 확장'}</button></td><td><button class="btn" data-prov="${k}">확정</button></td></tr>`).join('')}</table></div></div>`
-    :`<p class="note" style="margin:0 0 12px">비용 가정 ${Object.keys(PROV).length}개 모두 확정됨 · <button class="btn" data-reprov="1">다시 임의값으로 표시</button></p>`;
+    :!Object.keys(PROV).length?'':`<p class="note" style="margin:0 0 12px">비용 가정 ${Object.keys(PROV).length}개 모두 확정됨 · <button class="btn" data-reprov="1">다시 임의값으로 표시</button></p>`;
   document.querySelectorAll('.provBox').forEach(b=>b.innerHTML=html);
 }
 document.addEventListener('click',e=>{
@@ -1069,22 +1071,6 @@ function renderCompare(A){
   const o1=chartBase();o1.scales.y.ticks={...o1.scales.y.ticks,...pctTick};o1.plugins.tooltip={callbacks:{label:c=>`${c.dataset.label} ${pct(c.raw)}`}};
   if(!visitRates)o1.plugins.legend.display=false;
   mkChart('cAge',{type:'bar',data:{labels:BANDS.map(b=>b.l),datasets:ds},options:o1});
-  // 권역별 택배 vs 방문
-  $('regTitle').textContent=`권역별 취소율 — 택배 vs 방문설치${useBase?' (내장 기준선)':''}`;
-  const RG=[...REGIONS,'기타'];
-  let rRows;
-  if(useBase)rRows=REGIONS.map(r=>{const a=segStats(B,0,r);return{r,cn:a.n,crt:a.rate,vn:0,vr:0,exp:null}});
-  else rRows=RG.filter(r=>X.rg[r]).map(r=>{const g=X.rg[r];return{r,cn:g.cn,crt:g.cn?g.cr/g.cn:null,vn:g.vn,vr:g.vr,exp:g.exp}});
-  const hasV=rRows.some(x=>x.vn);
-  const dsR=[{label:'택배',data:rRows.map(x=>x.crt),backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:28}];
-  if(hasV)dsR.push({label:'방문설치',data:rRows.map(x=>x.vn?x.vr/x.vn:null),backgroundColor:css('--s-visit'),borderRadius:4,maxBarThickness:28});
-  const o3=chartBase();o3.scales.y.ticks={...o3.scales.y.ticks,...pctTick};o3.plugins.tooltip={callbacks:{label:c=>`${c.dataset.label} ${pct(c.raw)}`}};
-  if(!hasV)o3.plugins.legend.display=false;
-  mkChart('cReg',{type:'bar',data:{labels:rRows.map(x=>x.r),datasets:dsR},options:o3});
-  $('regCmp').innerHTML=`<table><tr><th>권역</th><th>택배 건수</th><th>택배 취소율</th><th>방문 건수</th><th>방문 취소</th><th>방문 취소율</th><th>연령보정 기대취소율</th><th>차이 (기대 − 방문)</th></tr>${rRows.map(x=>{
-    const vrt=x.vn?x.vr/x.vn:null,diff=vrt!=null&&x.exp!=null?x.exp-vrt:null;
-    return`<tr><td>${x.r}</td><td>${num(x.cn)}</td><td>${pct(x.crt)}</td><td>${x.vn||'–'}</td><td>${x.vn?x.vr:'–'}</td><td>${pct(vrt)}</td><td>${pct(x.exp)}</td><td class="${cls(diff)}">${pp(diff)}${x.vn&&x.vn<10?' <span style="color:var(--muted)">(방문 10건 미만)</span>':''}</td></tr>`}).join('')}</table>
-    <p class="note">${useBase?`신청자관리 파일 미업로드 — ${B.label} 기준.`:'연령보정 기대취소율 = 그 권역 방문 고객의 연령 구성 기준. 권역별 방문 건수가 적어 참고용입니다.'}</p>`;
   // 반품까지 걸린 일수 — 택배 vs 방문 (배송후 기준: 배송된 계약 대비 구간별 반품 비율)
   const bins=[['0~3일',0,3],['4~7일',4,7],['8~14일',8,14],['15~30일',15,30],['31일+',31,1e9]];
   const P=A.M.post,shipG=P.vN?P.pool:P.all,visG=P.V;
@@ -1133,7 +1119,7 @@ function renderRoi(A,R){
 순이익        = ${won(R.gain)} + ${won(R.saving)} − ${won(R.cost)} = ${won(R.net)}
 ROI           = 순이익 ÷ 총비용 = ${pct(R.roi,0)}
 손익분기 방문단가 = ${pp(R.d)} × ${won(S.profit)} + ${won(R.care)} = ${won(R.be)}`;
-  const ds=[0.02,0.04,0.06,0.08,0.10,0.12,0.15],cs=[30000,50000,80000,100000,150000,200000];
+  const ds=[0.02,0.04,0.06,0.08,0.10,0.12,0.15],cs=[20000,25000,30000,50000,80000,100000,150000];
   const mark=R.d!=null?R.d:null;
   $('sensTable').innerHTML=`<table><tr><th>취소율 감소 \\ 방문비용</th>${cs.map(c=>`<th>${man(c)}원</th>`).join('')}</tr>${ds.map(d=>`<tr><td>${pp(d)}${mark!=null&&Math.abs(mark-d)<0.01?' ◀ 테스트 근접':''}</td>${cs.map(c=>{const v=d*S.profit+R.care-c;return`<td class="${cls(v)}">${num(v)}</td>`}).join('')}</tr>`).join('')}</table>`;
 }
@@ -1143,11 +1129,16 @@ function renderExp(A,R,E){
     kpi('취소 감소율 가정',pct(E.rel,0),S.relRed!==''?'수동 입력':R.relRed!=null?'테스트 결과':'테스트 전 기본값 50%')+
     kpi('목표 건당 비용 (상한)',won(E.valuePerVisit),'이 금액 이하로 운영해야 이익')+
     kpi('예상 건당 비용',`<span class="${E.perVisit!=null&&E.perVisit<=E.valuePerVisit?'pos':'neg'}">${won(E.perVisit)}</span>`,`월 ${num(E.tot.vol)}건 · 본사비 포함`)+
-    kpi('필요 인원 (직고용)',E.tot.heads+'명',`1인 월 비용 ${man(E.perHead)}원`)+
+    (S.expMode==='piece'?kpi('필요 설치기사',E.tot.heads+'명',`건당 ${won(+S.outCost)} 지급 · 급여 없음`):kpi('필요 인원',E.tot.heads+'명',`직고용 1인 월 비용 ${man(E.perHead)}원`))+
     kpi('월 순이익',`<span class="${cls(E.tot.net)}">${man(E.tot.net)}원</span>`,`연 ${man(E.tot.net*12)}원 · 월 방어 ${E.tot.defended.toFixed(1)}건`);
-  $('expTable').innerHTML=`<table><tr><th>권역</th><th>월 방문 물량</th><th>1인 월 처리량</th><th>직고용 인원</th><th>직고용 건당</th><th>외주 건당</th><th>운영</th><th>월 비용</th><th>월 방어(건)</th><th>월 순이익</th></tr>${E.rows.map(x=>`<tr><td>${x.rg}</td><td>${x.vol.toFixed(0)}</td><td>${x.cap.toFixed(0)}</td><td>${x.heads}</td><td>${won(x.inPer)}</td><td>${won(S.outCost)}</td><td><b>${x.mode}</b></td><td>${man(x.cost)}</td><td>${x.defended.toFixed(1)}</td><td class="${cls(x.net)}">${man(x.net)}</td></tr>`).join('')}
+  document.querySelectorAll('.inhouse-only').forEach(el=>el.style.display=S.expMode==='piece'?'none':'');
+  const pc=S.expMode==='piece';
+  $('expTable').innerHTML=pc?`<table><tr><th>권역</th><th>월 방문 물량</th><th>1인 월 처리량</th><th>필요 기사</th><th>건당 지급</th><th>월 비용</th><th>월 방어(건)</th><th>월 순이익</th></tr>${E.rows.map(x=>`<tr><td>${x.rg}</td><td>${x.vol.toFixed(0)}</td><td>${x.cap.toFixed(0)}</td><td>${x.heads}</td><td>${won(+S.outCost)}</td><td>${man(x.cost)}</td><td>${x.defended.toFixed(1)}</td><td class="${cls(x.net)}">${man(x.net)}</td></tr>`).join('')}
+    <tr style="font-weight:700"><td>합계</td><td>${E.tot.vol.toFixed(0)}</td><td></td><td>${E.tot.heads}</td><td>본사 고정비 ${man(+S.hqCost)}원 포함</td><td>${man(E.tot.cost)}</td><td>${E.tot.defended.toFixed(1)}</td><td class="${cls(E.tot.net)}">${man(E.tot.net)}</td></tr></table>
+    <p class="note">설치기사에게 방문 1건마다 ${won(+S.outCost)}을 지급하는 방식이라 월 비용 = 월 방문 물량 × 건당 지급액 (급여·4대보험·차량비 없음). 필요 기사 수는 1인 월 처리량(1일 방문 건수 × 근무일 × 가동률) 기준 올림 — 모집 인원 참고용이고 비용에는 영향 없음.</p>`
+  :`<table><tr><th>권역</th><th>월 방문 물량</th><th>1인 월 처리량</th><th>직고용 인원</th><th>직고용 건당</th><th>건당 지급</th><th>운영</th><th>월 비용</th><th>월 방어(건)</th><th>월 순이익</th></tr>${E.rows.map(x=>`<tr><td>${x.rg}</td><td>${x.vol.toFixed(0)}</td><td>${x.cap.toFixed(0)}</td><td>${x.heads}</td><td>${won(x.inPer)}</td><td>${won(S.outCost)}</td><td><b>${x.mode}</b></td><td>${man(x.cost)}</td><td>${x.defended.toFixed(1)}</td><td class="${cls(x.net)}">${man(x.net)}</td></tr>`).join('')}
     <tr style="font-weight:700"><td>합계</td><td>${E.tot.vol.toFixed(0)}</td><td></td><td>${E.tot.heads}</td><td colspan="3">본사 고정비 ${man(+S.hqCost)}원 포함</td><td>${man(E.tot.cost)}</td><td>${E.tot.defended.toFixed(1)}</td><td class="${cls(E.tot.net)}">${man(E.tot.net)}</td></tr></table>
-    <p class="note">직고용 인원은 올림 처리(0.3명분 물량도 1명). 물량이 적은 권역은 1명을 다 못 써서 건당 비용이 비싸지므로 외주가 유리해집니다. 1인 월 손익분기 처리량 = <b>${E.beVisitsPerHead?E.beVisitsPerHead.toFixed(0):'–'}건</b> (이보다 적게 처리하면 그 기사는 적자).</p>`;
+    <p class="note">직고용 인원은 올림 처리(0.3명분 물량도 1명). 물량이 적은 권역은 1명을 다 못 써서 건당 비용이 비싸지므로 건당 지급이 유리해집니다. 1인 월 손익분기 처리량 = <b>${E.beVisitsPerHead?E.beVisitsPerHead.toFixed(0):'–'}건</b> (이보다 적게 처리하면 그 기사는 적자).</p>`;
   const B=E.B;
   $('ageTable').innerHTML=`<table><tr><th>대상</th><th>월 물량</th><th>택배 취소율</th><th>목표 건당 비용</th><th>월 방어(건)</th><th>월 방어 이익</th></tr>${[0,60,65,70,75,80].map(a=>{const s=segStats(B,a),v=s.rate*E.rel*S.profit+E.care,vol=s.monthly*S.coverage/100;
     return`<tr${a===+S.expAge?' style="font-weight:700"':''}><td>${bandLabelMin(a)}</td><td>${vol.toFixed(0)}</td><td>${pct(s.rate)}</td><td>${won(v)}</td><td>${(vol*s.rate*E.rel).toFixed(1)}</td><td>${man(vol*s.rate*E.rel*S.profit)}원</td></tr>`}).join('')}</table>`;
