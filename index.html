@@ -236,7 +236,7 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
   <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
     <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
-  <div class="card"><h2 id="daysTitle">반품까지 걸린 일수 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
+  <div class="card"><h2 id="daysTitle">기간별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
     <div class="tw" id="daysTable" style="margin-top:12px"></div></div>
 </section>
 
@@ -1071,29 +1071,34 @@ function renderCompare(A){
   const o1=chartBase();o1.scales.y.ticks={...o1.scales.y.ticks,...pctTick};o1.plugins.tooltip={callbacks:{label:c=>`${c.dataset.label} ${pct(c.raw)}`}};
   if(!visitRates)o1.plugins.legend.display=false;
   mkChart('cAge',{type:'bar',data:{labels:BANDS.map(b=>b.l),datasets:ds},options:o1});
-  // 반품까지 걸린 일수 — 택배 vs 방문 (배송후 기준: 배송된 계약 대비 구간별 반품 비율)
-  const bins=[['0~3일',0,3],['4~7일',4,7],['8~14일',8,14],['15~30일',15,30],['31일+',31,1e9]];
-  const P=A.M.post,shipG=P.vN?P.pool:P.all,visG=P.V;
-  const dist=g=>{const c=bins.map(()=>0);let nd=0;for(const x of g)if(x.ret){if(!x.ship){nd++;continue}const d=Math.round((toDate(x.ret)-toDate(x.ship))/DAY);const i=bins.findIndex(b=>d>=b[1]&&d<=b[2]);if(i>=0)c[i]++;else nd++}return{c,n:g.length,r:g.filter(x=>x.ret).length,nd}};
+  // 기간별 취소율 — 택배 vs 방문: 최초계약 대비 배송전취소 + 배송 후 경과일 구간별 반품 (일마감 없으면 배송된 계약 대비, 배취 칸 없음)
+  const bins=[['1~3일',0,3],['4~7일',4,7],['8~14일',8,14],['15~30일',15,30],['31일~',31,1e9]];
+  const hasInit=A.M.init.avail,G=hasInit?A.M.init:A.M.post,shipG=G.vN?G.pool:G.all,visG=G.V;
+  const cols=[...(hasInit?['배취']:[]),...bins.map(b=>b[0])];
+  // 배송일 당일 반품(0일)은 1~3일에 포함. 배송일 없는 반품은 합계에만
+  const dist=g=>{const c=cols.map(()=>0);let nd=0;for(const x of g){if(x.pre){c[0]++;continue}if(!x.ret)continue;
+      if(!x.ship){nd++;continue}const d=Math.round((toDate(x.ret)-toDate(x.ship))/DAY);const i=bins.findIndex(b=>d>=b[1]&&d<=b[2]);if(i>=0)c[i+(hasInit?1:0)]++;else nd++}
+    return{c,n:g.length,tot:c.reduce((s,v)=>s+v,0)+nd,nd}};
   const o2=chartBase();
   if(!contracts.length){   // 미업로드: 3~9월 실측 건수
     o2.plugins.legend.display=false;o2.plugins.tooltip={callbacks:{label:c=>`${num(c.raw)}건`}};
-    $('daysTitle').textContent='반품까지 걸린 일수 (내장 실측, 건수)';
-    mkChart('cDays',{type:'bar',data:{labels:['0~3일','0~7일','8~14일','15~30일','31일+'],datasets:[{label:'반품 건수',data:[null,375,42,14,0],backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:36}]},options:o2});
+    $('daysTitle').textContent='기간별 취소 (내장 실측, 건수)';
+    mkChart('cDays',{type:'bar',data:{labels:['0~7일','8~14일','15~30일','31일~'],datasets:[{label:'반품 건수',data:[375,42,14,0],backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:36}]},options:o2});
     $('daysTable').innerHTML='<p class="note">신청자관리 파일 미업로드 — 26년 3~9월 톡이즈 실측 (배송일 → 반품일).</p>';
   }else{
     const Sd=dist(shipG),Vd=visG.length?dist(visG):null;
-    $('daysTitle').textContent='반품까지 걸린 일수 — 택배 vs 방문설치 (배송된 계약 대비)';
+    $('daysTitle').textContent=`기간별 취소율 — 택배 vs 방문설치 (${hasInit?'최초계약':'배송된 계약'} 대비)`;
     o2.scales.y.ticks={...o2.scales.y.ticks,...pctTick};o2.plugins.tooltip={callbacks:{label:c=>`${c.dataset.label} ${pct(c.raw)}`}};
     const dsD=[{label:'택배',data:Sd.c.map(v=>Sd.n?v/Sd.n:null),backgroundColor:css('--s-ship'),borderRadius:4,maxBarThickness:28}];
     if(Vd)dsD.push({label:'방문설치',data:Vd.c.map(v=>v/Vd.n),backgroundColor:css('--s-visit'),borderRadius:4,maxBarThickness:28});
     else o2.plugins.legend.display=false;
-    mkChart('cDays',{type:'bar',data:{labels:bins.map(b=>b[0]),datasets:dsD},options:o2});
-    const share=(v,d)=>d.r?pct(v/d.r):'–';
-    $('daysTable').innerHTML=`<table><tr><th>배송 후</th><th>택배 반품</th><th>택배 (배송 대비)</th><th>택배 (반품 중 비중)</th><th>방문 반품</th><th>방문 (배송 대비)</th><th>방문 (반품 중 비중)</th></tr>${bins.map((b,i)=>
-      `<tr><td>${b[0]}</td><td>${num(Sd.c[i])}</td><td>${pct(Sd.n?Sd.c[i]/Sd.n:null)}</td><td>${share(Sd.c[i],Sd)}</td><td>${Vd?Vd.c[i]:'–'}</td><td>${Vd?pct(Vd.c[i]/Vd.n):'–'}</td><td>${Vd?share(Vd.c[i],Vd):'–'}</td></tr>`).join('')}
-      <tr><th>합계</th><th>${num(Sd.r)}</th><th>${pct(Sd.n?Sd.r/Sd.n:null)}</th><th>${Sd.r?'100%':'–'}</th><th>${Vd?Vd.r:'–'}</th><th>${Vd?pct(Vd.r/Vd.n):'–'}</th><th>${Vd&&Vd.r?'100%':'–'}</th></tr></table>
-      <p class="note">배송후 반품만 해당되어 비교 기준과 상관없이 같습니다 · 연령보정 전${Sd.nd||(Vd&&Vd.nd)?` · 배송일 없는 반품 ${Sd.nd+(Vd?Vd.nd:0)}건은 합계에만 포함`:''}</p>`;
+    mkChart('cDays',{type:'bar',data:{labels:cols,datasets:dsD},options:o2});
+    const cell=(v,n)=>n?`${pct(v/n)}<div style="font-size:11px;color:var(--muted)">${num(v)}건</div>`:'–';
+    const row=(l,d)=>`<tr><td>${l}</td><td>${num(d.n)}</td>${d.c.map(v=>`<td>${cell(v,d.n)}</td>`).join('')}<td><b>${cell(d.tot,d.n)}</b></td></tr>`;
+    const diff=Vd?`<tr><td>차이 (택배 − 방문)</td><td></td>${cols.map((_,i)=>{const v=Sd.n&&Vd.n?Sd.c[i]/Sd.n-Vd.c[i]/Vd.n:null;return`<td class="${cls(v)}">${pp(v)}</td>`}).join('')}<td class="${cls(Sd.tot/Sd.n-Vd.tot/Vd.n)}"><b>${pp(Sd.tot/Sd.n-Vd.tot/Vd.n)}</b></td></tr>`:'';
+    $('daysTable').innerHTML=`<table><tr><th></th><th>${hasInit?'최초계약':'배송 계약'}</th>${cols.map(c=>`<th>${c==='배취'?'배송전취소':'배송 후 '+c}</th>`).join('')}<th>합계</th></tr>
+      ${row('택배',Sd)}${Vd?row('방문설치',Vd):''}${diff}</table>
+      <p class="note">각 칸 = 그 구간 취소 ÷ ${hasInit?'최초계약':'배송된 계약'} (구간을 더하면 합계 취소율) · 배송 후 일수 = 배송일 → 반품일, 당일 반품은 1~3일에 포함 · 연령보정 전 · 택배 = 방문군 신청일 ±${S.padDays}일 대조군${hasInit?'':' · 일마감 파일이 없어 배송전취소 칸 없음'}${Sd.nd||(Vd&&Vd.nd)?` · 배송일 없는 반품 ${Sd.nd+(Vd?Vd.nd:0)}건은 합계에만 포함`:''}${Vd&&Vd.n<100?' · 방문 건수가 적어 구간별 차이는 참고용':''}</p>`;
   }
   // 표
   $('cmpTable').innerHTML=`<table><tr><th>연령대</th><th>택배 건수</th><th>택배 취소율</th><th>방문 건수</th><th>방문 취소</th><th>방문 취소율</th><th>차이</th></tr>${BANDS.map((b,i)=>{
