@@ -140,6 +140,7 @@ body:not(.authed) .auth-only{display:none!important}
     <div class="sub">방문설치로 반품(취소)이 줄었는가 · 비용 효과는 참고 탭</div>
   </div>
   <div class="uploads">
+    <span id="lastUpd" style="font-size:12.5px;color:var(--text-2)"></span>
     <button class="btn primary auth-only" id="btnUp">파일 업로드</button>
     <button class="btn auth-only" id="btnSync" title="이 PC의 데이터를 GitHub에 올려 다른 PC에서도 보이게 합니다 (토큰 필요)">동기화</button>
     <button class="btn auth-only" id="btnSet">설정</button>
@@ -185,7 +186,7 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="up-sec">
     <div class="up-t">② 신청자관리 월간누적 <span>— wm_dash 취소율 탭에 올린 파일 자동 사용</span></div>
     <div class="up-s" id="upMonth"></div>
-    <label class="drop" data-drop="fContract">여기에 엑셀을 끌어다 놓거나 <u>클릭해서 선택</u><small>wm_dash에 올리지 않은 파일만 · 여러 개 가능 · 같은 파일명은 덮어씀</small><input type="file" id="fContract" accept=".xlsx,.xls" multiple hidden></label>
+    <label class="drop" data-drop="fContract">여기에 엑셀을 끌어다 놓거나 <u>클릭해서 선택</u><small>신청일 범위로 받은 파일 · 여러 개 가능 · 새 파일 범위 안에 다 들어가는 예전 파일은 자동 정리</small><input type="file" id="fContract" accept=".xlsx,.xls" multiple hidden></label>
   </div>
   <div class="up-sec">
     <div class="up-t">③ 방문 대상자</div>
@@ -382,6 +383,9 @@ function saveSettings(){try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch
 function confirmProv(k,on=true){if(on)S.confirmed[k]=true;else delete S.confirmed[k];saveSettings();render()}
 
 let contracts=[];   // 톡이즈 계약 (개인정보 제외)
+let dropped=new Map();   // 주문키/고객키 → {why,apply}: 일마감에 있으나 판정 불가로 뺀 계약
+let monthCov=[];   // 월간누적 파일별 신청일 구간 [{name,wm,mod,lo,hi}]
+let pending=new Map();   // 주문키/고객키 → 일마감 계약: 월간누적이 아직 그 신청일까지 안 와서 상태(배송·취소) 모르는 건
 let visits=[];      // 방문설치 기록
 let charts={};
 
@@ -501,24 +505,41 @@ async function loadWmDash(force){
 // wm_dash WM 취소율과 같은 판정:
 //  최초계약 = 일마감(고객키 중복 제거), 일마감에 이미 반품일 있는 건 제외
 //  일마감엔 있는데 월간누적에 없음 = 배송전취소 / 월간누적 반품일 있음 = 배송후취소 / 그 외 = 유지
+// 월간누적은 신청일 범위로 받은 파일(1/1~전일, 전월 1일~전일 등)을 섞어 올릴 수 있다.
+//  파일마다 담은 신청일 구간(톡이즈 신청일 최소~최대)을 보고, 계약마다 "그 신청일을 담은 가장 최근 파일" 하나로 판정한다.
+//  → 최근 구간만 다시 받아도 오래된 달은 예전 파일 상태 그대로, 최근 구간에서 사라진 계약은 배송전취소로 정확히 잡힘
 function buildContracts(){
   const byMod=(a,b)=>(a.mod||0)-(b.mod||0)||a.name.localeCompare(b.name);
   const K=c=>c.ck||c.ok;
   const all=[...src,...wmSrc];   // 월간누적 = wm_dash 취소율 탭 파일 + 여기서 업로드한 파일 (같은 계약은 늦게 올린 쪽이 이김)
   const months=all.filter(s=>s.kind==='month').sort(byMod),days=all.filter(s=>s.kind==='daily').sort(byMod);
-  const mm=new Map();for(const s of months)for(const c of s.rows)mm.set(K(c),c);   // 나중 파일(최신 상태)이 덮어씀
-  const mMonths=new Set();let mMax='';
-  for(const c of mm.values()){if(c.apply){mMonths.add(c.apply.slice(0,7));if(c.apply>mMax)mMax=c.apply}}
-  cinfo={daily:days.length,month:months.length,wm:wmSrc.length,unknown:0,dailyRet:0};
+  // 최신 파일 먼저. 파일별 신청일 구간과 키 맵
+  const cov=months.slice().reverse().map(s=>{let lo='',hi='';const m=new Map();
+    for(const c of s.rows){m.set(K(c),c);if(c.apply){if(!lo||c.apply<lo)lo=c.apply;if(c.apply>hi)hi=c.apply}}
+    return{s,lo,hi,m}}).filter(f=>f.lo);
+  const covering=a=>a?cov.find(f=>a>=f.lo&&a<=f.hi):null;   // 이 신청일을 담은 가장 최근 파일
+  let mMax='';for(const f of cov)if(f.hi>mMax)mMax=f.hi;
+  // 월간 계약 상태 = 신청일을 담은 가장 최근 파일의 행. 그 파일에 없으면(사라짐) 월간 기준으로는 없는 계약
+  const mm=new Map(),seen=new Set();
+  for(const f of cov)for(const[k,c]of f.m){if(seen.has(k))continue;seen.add(k);
+    const g=covering(c.apply)||f,x=g.m.get(k);if(x)mm.set(k,x)}
+  monthCov=cov.map(f=>({name:f.s.name,wm:!!f.s.wm,mod:f.s.mod||0,lo:f.lo,hi:f.hi}));   // 업로드 창 표시용 (최신 먼저)
+  // 일마감 최종 업데이트 = 일마감 파일 중 가장 늦게 저장된 파일의 수정 시각
+  const last=days.reduce((a,s)=>(s.mod||0)>(a?.mod||0)?s:a,null);
+  cinfo={daily:days.length,month:months.length,wm:wmSrc.length,unknown:0,dailyRet:0,dailyMod:last?.mod||0,dailyName:last?.name||''};
+  cinfo.mMax=mMax;
   const out=[];
+  dropped=new Map();pending=new Map();   // 일마감에는 있지만 계약 목록에서 뺀 건 (방문 대상자 매칭·사유 표시용)
+  const drop=(d,why)=>{const x={why,apply:d.apply};if(d.ok)dropped.set(d.ok,x);if(d.ck)dropped.set(d.ck,x)};
   const dm=new Map();for(const s of days)for(const c of s.rows)dm.set(K(c),c);
   for(const[k,d]of dm){
-    if(d.ret){cinfo.dailyRet++;continue}
+    if(d.ret){cinfo.dailyRet++;drop(d,'dailyRet');continue}
     const m=mm.get(k);
     if(m)out.push({...m,apply:m.apply||d.apply,pre:false,initOk:true});
-    // 월간누적이 그 달을 덮고 있고, 신청일이 월간 파일 최신 신청일 이전일 때만 배송전취소로 확정
-    else if(d.apply&&mMonths.has(d.apply.slice(0,7))&&d.apply<=mMax)out.push({...d,ship:'',ret:'',pre:true,initOk:true});
-    else cinfo.unknown++;
+    // 그 신청일을 담은 월간 파일이 있는데 거기 없으면 배송전취소로 확정
+    else if(covering(d.apply))out.push({...d,ship:'',ret:'',pre:true,initOk:true});
+    // 상태 미확인: 비교 모수에서는 빼고, 방문 대상자 매칭에만 쓴다 (월간누적이 올라오면 자동으로 판정)
+    else{cinfo.unknown++;const p={...d,ship:'',ret:'',pre:false,initOk:false,pend:true};if(d.ok)pending.set(d.ok,p);if(d.ck)pending.set(d.ck,p)}
   }
   // 일마감에 없는 월간 계약: 배송후 기준 비교에만 사용
   for(const[k,m]of mm)if(!dm.has(k))out.push({...m,pre:false,initOk:false});
@@ -527,15 +548,20 @@ function buildContracts(){
 async function saveSrc(){await kvSet('src',src);await kvSet('contractFiles',src.map(s=>s.name))}
 // 신청자관리 파일 반영
 //  공용폴더(fromDir) = 일마감만 사용. 다시 읽을 때 업로드한 월간누적만 남기고 나머지를 이 파일들로 교체
-//  업로드 = 월간누적으로 반영(up:true). 같은 파일명은 덮어씀
+//  업로드 = 월간누적으로 반영(up:true). 파일명이 같아도 신청일 범위가 다르면 둘 다 둔다(CMS 다운로드 파일명이 같을 수 있음).
+//  새 파일의 신청일 범위에 완전히 들어가는 예전 업로드 파일만 지운다 (새 파일이 그 구간을 더 최신 상태로 덮으므로)
+const applyRange=rows=>{let lo='',hi='';for(const c of rows)if(c.apply){if(!lo||c.apply<lo)lo=c.apply;if(c.apply>hi)hi=c.apply}return[lo,hi]};
 async function ingestContracts(items,fromDir){
   if(syncMode){syncMode=false;visits=await kvGet('visits')||[]}   // 원본 파일을 넣기 시작하면 동기화본 보기 해제
-  const map=new Map(src.filter(s=>!fromDir||s.up).map(s=>[s.kind+'|'+s.name,s]));
+  let list=src.filter(s=>!fromDir||s.up);
   for(const it of items){const f=it.file||it;const kind=fromDir?contractKind(it.folder,f.name):'month';
     if(fromDir&&kind!=='daily')continue;
-    const rows=await readRows(f);
-    map.set(kind+'|'+f.name,{name:f.name,kind,up:!fromDir,mod:f.lastModified||0,rows:parseContracts(rows)})}
-  src=[...map.values()];buildContracts();await saveSrc();
+    const rows=parseContracts(await readRows(f)),nx={name:f.name,kind,up:!fromDir,mod:f.lastModified||0,rows};
+    if(kind==='month'){const[lo,hi]=applyRange(rows);
+      list=list.filter(s=>{if(!s.up||s.kind!=='month')return true;const[a,b]=applyRange(s.rows);return!(lo&&a&&a>=lo&&b<=hi&&(s.mod||0)<=nx.mod)})}
+    else list=list.filter(s=>!(s.kind===kind&&s.name===f.name));
+    list.push(nx)}
+  src=list;buildContracts();await saveSrc();
 }
 // 방문 대상자: 엑셀 업로드와 수기 입력을 한 목록으로 관리. 같은 키(주문키→고객키)는 나중 값으로 덮어씀
 const vKey=v=>v.ok||v.ck;
@@ -588,7 +614,10 @@ function renderUpInfo(){
     :re?`공용폴더 "${esc(dirHandle.name)}" — 권한이 끊김. "다시 열기"를 눌러 허용하세요`
     :`공용폴더 "${esc(dirHandle.name)}" 연결됨 · 일마감 ${ci.daily}개 파일`;
   const up=ci.month-ci.wm;
-  $('upMonth').innerHTML=ci.month?`wm_dash 취소율 탭 ${ci.wm}개${up?` + 여기서 업로드 ${up}개`:''}${ci.unknown?` · 월간 파일이 덮지 않는 계약 ${ci.unknown}건 제외`:''}`
+  const fd=t=>t?new Date(t).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}).replace(/s/g,''):'';
+  $('upMonth').innerHTML=ci.month?`wm_dash 취소율 탭 ${ci.wm}개${up?` + 여기서 업로드 ${up}개`:''}${ci.unknown?` · 월간 파일이 덮지 않는 계약 ${ci.unknown}건은 상태 확인 전`:''}`
+      +`<div style="margin-top:4px">${monthCov.map((f,i)=>`<div>${i?'':'<b>'}${esc(f.name)} — 신청 ${f.lo}~${f.hi}${f.mod?` (${fd(f.mod)} 저장)`:''}${f.wm?' · wm_dash':''}${i?'':'</b>'}</div>`).join('')}</div>`
+      +'<div style="margin-top:4px">신청일 범위로 받은 파일을 섞어 올려도 됩니다 — 계약마다 그 신청일을 담은 가장 최근 파일로 판정. 반품은 대부분 신청 후 3주 안이라 평소엔 "전월 1일~전일"만 받아 올리면 충분합니다.</div>'
     :'없음 — wm_dash 취소율 탭에 신청자관리(조회 기간 전체)를 올리거나 아래에 파일을 놓으세요';
   $('upVisit').textContent=`현재 ${visits.length}건${visits.length?' · 같은 고객을 다시 올리면 빈 칸은 기존 값 유지':''}`;
 }
@@ -692,8 +721,10 @@ function buildSyncPayload(){
   // 행 = [신청일, 배송일, 반품일, 연령, 권역, 플래그(1=배송전취소, 2=최초계약 모수)]
   const rows=contracts.map(c=>[c.apply||'',c.ship||'',c.ret||'',c.age??null,c.region||'',(c.pre?1:0)|(c.initOk?2:0)]);
   const vs=visits.map(v=>{const c=(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))||null;
-    return{ix:c?idx.get(c):null,date:v.date||'',travel:v.travel||0,install:v.install||0,cost:v.cost||0,wifi:v.wifi||'',signup:v.signup||''}});
-  return{v:1,ts:Date.now(),cinfo:{daily:cinfo.daily,month:cinfo.month,unknown:cinfo.unknown},rows,visits:vs};
+    const p=c?null:(v.ok&&pending.get(v.ok))||(v.ck&&pending.get(v.ck))||null;
+    const miss=c||p?null:(v.ok&&dropped.get(v.ok))||(v.ck&&dropped.get(v.ck))||{why:'none'};
+    return{ix:c?idx.get(c):null,pend:p?{apply:p.apply,age:p.age??null,region:p.region||''}:null,miss,date:v.date||'',travel:v.travel||0,install:v.install||0,cost:v.cost||0,wifi:v.wifi||'',signup:v.signup||''}});
+  return{v:1,ts:Date.now(),cinfo:{daily:cinfo.daily,month:cinfo.month,unknown:cinfo.unknown,dailyMod:cinfo.dailyMod||0,mMax:cinfo.mMax||''},rows,visits:vs};
 }
 function applySyncPayload(p){
   contracts=p.rows.map(r=>({ok:'',ck:'',apply:r[0],ship:r[1],ret:r[2],age:r[3],region:r[4],pre:!!(r[5]&1),initOk:!!(r[5]&2)}));
@@ -809,13 +840,18 @@ function analyze(){
   // 배송 리드타임(신청→배송 중앙값): 배송전취소 건도 다른 계약과 같은 시점까지 기다린 뒤 판정해 최근 구간 과대계상을 막는다
   const lead=median(contracts.filter(c=>c.ship&&c.apply).map(c=>Math.max(0,(toDate(c.ship)-toDate(c.apply))/DAY)))??3;
   // 배송전취소가 아니면 배송된 계약으로 본다 (그 뒤 취소 = 배송후취소). 판정 대기를 켜면 배송 후 N일 지난 건만
-  const shipped=c=>!c.pre&&(!obs||(c.ship&&age(c.ship)>=obs));
+  const shipped=c=>!c.pre&&!c.pend&&(!obs||(c.ship&&age(c.ship)>=obs));
   const judged={init:c=>c.initOk&&(c.pre?(!obs||age(c.apply)>=obs+lead):shipped(c)),post:shipped};
   const isCx={init:c=>c.pre||!!c.ret,post:c=>!!c.ret};
   const byOk=new Map(contracts.map(c=>[c.ok,c])),byCk=new Map(contracts.filter(c=>c.ck).map(c=>[c.ck,c]));
   // 동기화본은 키가 없고 계약 순번(ix)으로 연결됨
-  const vRows=visits.map(v=>{const c=(v.ix!=null&&contracts[v.ix])||(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))||null;
-    const st=!c?'miss':c.pre?'pre':c.ret?'ng':!shipped(c)?'wait':'ok';return{v,c,st}});
+  // 일마감에만 있고 월간누적 미반영인 계약도 매칭은 한다(상태 확인 전, 취소율 계산에서는 제외)
+  const vRows=visits.map(v=>{const c=(v.ix!=null&&contracts[v.ix])||(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))
+      ||(syncMode?(v.pend?{...v.pend,pre:false,initOk:false,pend:true}:null):(v.ok&&pending.get(v.ok))||(v.ck&&pending.get(v.ck)))||null;
+    const st=!c?'miss':c.pend?'pend':c.pre?'pre':c.ret?'ng':!shipped(c)?'wait':'ok';
+    // 미매칭 사유: 일마감에서 찾았지만 판정 불가로 뺀 건인지, 신청자관리 어디에도 없는 건인지
+    const miss=c?null:syncMode?(v.miss||null):(v.ok&&dropped.get(v.ok))||(v.ck&&dropped.get(v.ck))||{why:'none'};
+    return{v,c,st,miss}});
   const vSet=new Set(vRows.filter(x=>x.c).map(x=>x.c));
   const cnt=(arr,cx)=>{const o={};for(const b of BANDS)o[b.k]={n:0,r:0};for(const c of arr){const k=bandOf(c.age);o[k].n++;if(cx(c))o[k].r++}return o};
   const M={};
@@ -850,7 +886,7 @@ function analyze(){
   const wm=arr=>{const n=arr.length,pre=arr.filter(c=>c.pre).length,post=arr.filter(c=>!c.pre&&c.ret).length;return{n,pre,post,tot:pre+post,ship:n-pre}};
   // 기본 필드(ROI 등)는 방문이 영향을 주는 배송후 기준
   return{asOf,obs,lead,vRows,M,...M.post,wmV:wm(M.init.V),wmC:wm(M.init.pool),
-    waiting:vRows.filter(x=>x.st==='wait').length,missing:vRows.filter(x=>x.st==='miss').length};
+    waiting:vRows.filter(x=>x.st==='wait').length,missing:vRows.filter(x=>x.st==='miss').length,pend:vRows.filter(x=>x.st==='pend').length};
 }
 function roiCalc(A){
   const base=A.exp,d=base!=null&&A.vRate!=null?base-A.vRate:null,n=A.vN;
@@ -906,7 +942,15 @@ function kpi(l,v,d,dotVar){return`<div class="kpi"><div class="l">${dotVar?`<spa
 function render(){
   const A=analyze(),R=roiCalc(A),E=expansion(A,R,+S.expAge);
   renderProv();renderSummary(A,R,E);renderHero(A);renderCompare(A);renderRoi(A,R);renderExp(A,R,E);renderGuide(A,E);renderLog(A);
-  refreshStatus();
+  refreshStatus();renderLastUpd();
+}
+// 헤더: 신청자 일마감 최종 업데이트 yyyy-mm-dd(요일) h:mm
+function renderLastUpd(){
+  const t=cinfo.dailyMod,el=$('lastUpd');
+  if(!t){el.textContent='';return}
+  const d=new Date(t),p=n=>String(n).padStart(2,'0');
+  el.textContent=`최종 업데이트 : ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}(${'일월화수목금토'[d.getDay()]}) ${d.getHours()}:${p(d.getMinutes())}`;
+  el.title=cinfo.dailyName?'신청자관리 일마감 최신 파일: '+cinfo.dailyName:'신청자관리 일마감 최신 파일 기준';
 }
 function provVal(k){return k==='burden'?S[k]+'%':k.startsWith('cap')?S[k]+'건':won(+S[k])}
 function renderProv(){
@@ -937,6 +981,12 @@ function verdictOf(X){
   if(d>0&&X.p<0.2)return{cls:'warn',t:'방향성 있음'};
   return{cls:'bad',t:'효과 미확인'};
 }
+// 차이의 신뢰도를 짧게 (확률 숫자 대신). 숫자는 마우스를 올리면 보임
+function sigLabel(X){
+  if(X.p==null)return'';
+  const v=verdictOf(X),t=X.vN<30?'표본 부족 · 참고용':v.t==='효과 확인'?'유의함':v.t==='방향성 있음'?'방향성만 · 참고용':'유의하지 않음';
+  return`<span title="효과가 없어도 이 정도 차이가 날 확률(단측 p값) ${pct(X.p,1)}">${t}</span>`;
+}
 // 상단 토글로 고른 비교 기준 (최초계약 기준은 일마감 파일이 있어야 계산됨 → 없으면 배송후 기준)
 const curMetric=A=>A.M[S.cmpMetric]?.avail?A.M[S.cmpMetric]:A.M.post;
 const METRIC_DESC={init:'(배송전취소 + 배송후취소) ÷ 최초계약 — wm_dash 취소율과 같음',post:'배송후취소 ÷ 배송된 계약 — 방문설치가 영향을 주는 구간'};
@@ -956,12 +1006,13 @@ function renderSummary(A,R,E){
     t='방문설치 테스트 데이터 대기 중';
     items=[`택배 취소율 ${contracts.length?pct(rateAll(X)):`${pct(segStats(E.B,0).rate)} (${E.B.label})`} — ② 방문 대상자를 입력하면 비교가 시작됩니다.`];
   }else{
-    const line=`방문 ${X.vN}명 중 ${X.vR}명 취소(${pct(X.vRate)}) · 같은 연령 구성의 택배라면 ${pct(X.exp)} · 차이 <b>${pp(X.exp-X.vRate)}</b> · 우연일 확률 ${pct(X.p,1)}`;
-    if(X.vN<30){cls='warn';t=`진행 중 — 방문 ${X.vN} / 30건`;if(X.vN)items.push(line+' (표본 부족, 참고용)')}
+    const line=`방문 ${X.vN}명 중 ${X.vR}명 취소(${pct(X.vRate)}) · 같은 연령 구성의 택배라면 ${pct(X.exp)} · 차이 <b>${pp(X.exp-X.vRate)}</b> · ${sigLabel(X)}`;
+    if(X.vN<30){cls='warn';t=`진행 중 — 방문 ${X.vN} / 30건`;if(X.vN)items.push(line)}
     else{const v=verdictOf(X);cls=v.cls;
       t=v.t==='효과 확인'?'효과 확인 — 방문설치가 취소를 줄였습니다':v.t==='방향성 있음'?'방향성 있음 — 표본을 늘려 재확인 필요':'효과 미확인 — 택배 대비 차이가 없습니다';
       items.push(line)}
-    if(A.missing)items.push(`계약 파일에서 못 찾은 방문 대상자 ${A.missing}건 — ② 탭에서 키 확인`);
+    if(A.missing)items.push(`계약 파일에서 못 찾은 방문 대상자 ${A.missing}건 — ② 탭에서 사유 확인`);
+    if(A.pend)items.push(`상태 확인 전 방문 대상자 ${A.pend}건 — 일마감에서 계약은 확인됐지만 월간누적이 아직 그 신청일까지 없어 배송·취소 여부를 몰라 취소율 계산에서 뺐습니다. 월간누적이 올라오면 자동 반영`);
   }
   $('verdict').innerHTML=`<div class="verdict ${cls}"><div class="t">${t}</div>${items.length?`<ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}</div>`;
 }
@@ -979,13 +1030,13 @@ function renderHero(A){
       <div class="big">${has?pct(X.exp):pct(base)}</div>
       <div class="d">${has?`같은 기간 택배 ${num(X.cN)}건 · 보정 전 ${pct(X.cRate)}`:contracts.length?'톡이즈 계약 전체':B.label}</div></div>
     <div class="mid"><div class="d">차이</div><div class="diff" style="color:${dCol}">${diff==null?'vs':pp(diff)}</div>
-      <div class="d">${X.p!=null?`우연일 확률 ${pct(X.p,1)}`:''}</div></div>
+      <div class="d">${sigLabel(X)}</div></div>
     <div class="side visit"><div class="l"><span class="dot" style="background:var(--s-visit)"></span>방문설치 취소율</div>
       <div class="big">${has?pct(X.vRate):'–'}</div>
       <div class="d">${has?`${X.vR}/${X.vN}건 취소 · 95% 범위 ${pct(X.ci[0],0)}~${pct(X.ci[1],0)}`:'방문 대상자 입력 후 표시'}</div></div>
   </div>
   <div class="prog"><div class="bar"><i style="width:${(pr*100).toFixed(0)}%"></i></div>
-    <div class="d">방문 <b>${n}</b> / 목표 30건${pre?` · 배송전취소 ${pre}건`:''}${A.missing?` · 계약 미매칭 ${A.missing}건`:''}${A.obs?` · 판정 대기 ${A.waiting}건`:''}</div></div>`;
+    <div class="d">방문 <b>${n}</b> / 목표 30건${pre?` · 배송전취소 ${pre}건`:''}${A.missing?` · 계약 미매칭 ${A.missing}건`:''}${A.pend?` · 상태 확인 전 ${A.pend}건`:''}${A.obs?` · 판정 대기 ${A.waiting}건`:''}</div></div>`;
   // 개요 표 (wm_dash 형식, 연령보정 전)
   const W=[['택배 대조군',A.wmC],['방문설치',A.wmV]];
   $('wmTable').innerHTML=A.M.init.avail?`<table><tr><th>구분</th><th>최초 계약수</th><th>배송전취소</th><th>배송후취소</th><th>취소수</th><th>취소율<br><span style="font-weight:400">(÷최초계약)</span></th><th>배송된 계약</th><th>배송후 취소율<br><span style="font-weight:400">(÷배송된 계약)</span></th></tr>${W.map(([l,w])=>{const r=(a,b)=>b?pct(a/b,2):'–';
@@ -1113,13 +1164,18 @@ function renderGuide(A,E){
 }
 function renderLog(A){
   if(!A.vRows.length){$('logTable').innerHTML='<p class="note">위에서 직접 입력하거나 대상자 엑셀을 업로드하면 건별 상태가 표시됩니다.</p>';return}
-  const tag={ok:'<span class="tag ok">유지</span>',pre:'<span class="tag ng">배송전취소</span>',ng:'<span class="tag ng">취소</span>',wait:'<span class="tag wait">관찰 중</span>',miss:'<span class="tag miss">계약 미매칭</span>'};
+  const tag={ok:'<span class="tag ok">유지</span>',pre:'<span class="tag ng">배송전취소</span>',ng:'<span class="tag ng">취소</span>',wait:'<span class="tag wait">관찰 중</span>',miss:'<span class="tag miss">계약 미매칭</span>',pend:'<span class="tag wait">상태 확인 전</span>'};
   const mask=s=>s?s.slice(0,6)+'…'+s.slice(-3):'';
-  $('logTable').innerHTML=`<table><tr><th>주문키</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${A.vRows.map(({v,c,st})=>{
+  const mMax=cinfo.mMax?cinfo.mMax.slice(5):'–';
+  const missWhy=m=>!m?'':m.why==='unknown'?`일마감에 있음(신청 ${m.apply?m.apply.slice(5):'?'}) · 월간누적 미반영 — 월간 최신 신청일 ${mMax}`
+    :m.why==='dailyRet'?`일마감에 있음 · 일마감 시점에 이미 반품일 있음 → 최초계약에서 제외`
+    :'톡이즈 일마감·월간누적 어디에도 이 키 없음 (키 오타·다른 브랜드·아직 계약 전)';
+  $('logTable').innerHTML=`<table><tr><th>주문키</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${A.vRows.map(({v,c,st,miss})=>{
     const el=c&&c.ship&&A.asOf?Math.round((A.asOf-toDate(c.ship))/DAY)+'일':'–';
-    return`<tr><td>${mask(v.ok||v.ck)||esc(v.sid)}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td>${syncMode?'':`<button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
+    const mw=st==='pend'?`일마감 계약 확인(신청 ${c.apply?c.apply.slice(5):'?'}) · 월간누적이 ${mMax}까지라 배송·취소 미확인 → 취소율 계산 제외`:missWhy(miss);
+    return`<tr><td>${mask(v.ok||v.ck)||esc(v.sid)}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}${mw?`<div style="font-size:11.5px;color:var(--warn);white-space:normal;min-width:180px;text-align:left">${esc(mw)}</div>`:''}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td>${syncMode?'':`<button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
   ${syncMode?'<p class="note">동기화본 보기 — 고객키·주문키·비고·설치담당은 공개 동기화 파일에 넣지 않아 "방문 n"으로 표시됩니다. 수정은 원본 데이터가 있는 PC에서 하고 동기화하세요.</p>':''}
-  <p class="note">배송전취소 = 일마감에는 있는데 월간누적에서 사라진 건 (최초계약 기준에서만 취소로 셈). 계약 미매칭 = 신청자관리 파일에서 주문키/고객키를 못 찾은 건 (해당 일마감·월간 파일 누락, 키 오타).</p>`;
+  <p class="note">배송전취소 = 일마감에는 있는데 월간누적에서 사라진 건 (최초계약 기준에서만 취소로 셈). 계약 미매칭 = 방문 대상자의 주문키(우선) 또는 고객키가 톡이즈 계약 목록에 없는 건. 계약 목록은 일마감(최초계약) + 월간누적(배송·반품 상태)을 고객키로 합친 것이라, 일마감에 있는 계약이면 매칭됩니다. 상태 확인 전 = 일마감에서 계약은 확인됐지만 월간누적이 아직 그 신청일까지 없어 배송·취소 여부를 모르는 건 — 취소율 계산에서 빼 두었다가 월간누적(wm_dash 취소율 탭 또는 여기 업로드)이 올라오면 자동으로 판정됩니다.</p>`;
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 $('logTable').addEventListener('click',e=>{const k=e.target.dataset?.del;if(k)removeVisit(k)});
