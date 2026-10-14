@@ -203,7 +203,7 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="form">
     <label>판정 대기 (배송 후 N일 지난 건만, 0 = 대기 없이 전부 집계)<input type="number" data-k="waitDays" min="0"></label>
     <label>대조군 기간 여유 (방문군 신청일 ±N일)<input type="number" data-k="padDays" min="0"></label>
-    <label>기준일 (비우면 파일 최신일)<input type="date" data-k="asOf"></label>
+    <label>기준일 (비우면 파일 최신일, 오늘 이후면 오늘)<input type="date" data-k="asOf"></label>
     <label class="chk"><input type="checkbox" data-k="sameRegion"> 대조군을 방문군과 같은 권역으로 제한</label>
   </div>
   <p class="note"><b>평소엔 기본값 그대로 두면 됩니다.</b> 바꾸면 바로 반영되고 이 브라우저에 저장됩니다.<br>
@@ -833,7 +833,10 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
 function asOfDate(){
   if(S.asOf)return toDate(S.asOf);
   let m=null;for(const c of contracts)for(const d of[c.apply,c.ship,c.ret])if(d&&(!m||d>m))m=d;
-  return m?toDate(m):null;
+  if(!m)return null;
+  // 배송 예정일 등 미래 날짜가 섞여 있어도 기준일이 오늘을 넘지 않게
+  const t=new Date();t.setHours(0,0,0,0);const d=toDate(m);
+  return d>t?t:d;
 }
 const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]};
 const METRIC={init:'최초계약 기준',post:'배송후 기준'};
