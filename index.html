@@ -336,6 +336,26 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="dlg-f"><button class="btn" data-close>취소</button><button class="btn primary" id="loginOk">로그인</button></div>
 </dialog>
 
+<!-- 방문 대상자 수정 -->
+<dialog id="dlgEdit" class="dlg">
+  <div class="dlg-h"><b>방문 대상자 수정</b><button class="x" data-close aria-label="닫기">✕</button></div>
+  <p class="note" id="eKey" style="margin-top:0"></p>
+  <div class="form">
+    <label>고객명<input id="eName"></label>
+    <label>방문일<input type="date" id="eDate"></label>
+    <label>설치담당<input id="eStaff"></label>
+    <label>방문비용 (원)<input type="number" id="eCost" step="5000"></label>
+    <label>이동시간 (분)<input type="number" id="eTravel"></label>
+    <label>설치시간 (분)<input type="number" id="eInstall"></label>
+    <label>와이파이 연결<select id="eWifi"><option value="">–</option><option>Y</option><option>N</option></select></label>
+    <label>회원가입 완료<select id="eSignup"><option value="">–</option><option>Y</option><option>N</option></select></label>
+    <label>비고<input id="eMemo"></label>
+  </div>
+  <label class="chk" style="margin-top:12px"><input type="checkbox" id="eManPre"> 방문 약속 후 당일 취소 → <b>배송전취소로 처리</b></label>
+  <p class="note">체크하면 데이터(반품일·배송일)와 상관없이 이 계약을 배송전취소로 봅니다. 최초계약 기준에서는 방문군 취소로 세고, 배송후 기준에서는 배송된 계약이 아니므로 빠집니다. 계약이 매칭돼야 반영됩니다.</p>
+  <div class="dlg-f"><button class="btn" data-close>취소</button><button class="btn primary" id="eSave">저장</button></div>
+</dialog>
+
 <!-- 동기화 토큰 -->
 <dialog id="dlgTok" class="dlg">
   <div class="dlg-h"><b>동기화 — GitHub 토큰</b><button class="x" data-close aria-label="닫기">✕</button></div>
@@ -494,12 +514,12 @@ function parseVisits(rows){
   const h=rows[0].map(x=>String(x).replace(/\s/g,''));
   const ix={ok:findCol(h,['주문키']),ck:findCol(h,['고객키']),name:findCol(h,['고객명','성명']),date:findCol(h,['방문일']),staff:findCol(h,['설치담당','기사','담당']),
     travel:findCol(h,['이동']),install:findCol(h,['설치시간','소요']),cost:findCol(h,['비용']),wifi:findCol(h,['와이파이','wifi','WIFI']),
-    signup:findCol(h,['회원가입']),memo:findCol(h,['비고','메모'])};
+    signup:findCol(h,['회원가입']),memo:findCol(h,['비고','메모']),manPre:findCol(h,['배송전취소'])};
   if(ix.ok<0&&ix.ck<0)throw new Error('방문 기록 파일에 "주문키" 또는 "고객키" 열이 없습니다.');
   const g=(r,i)=>i>=0?r[i]:'';
   return rows.slice(1).map(r=>({ok:String(g(r,ix.ok)).trim(),ck:String(g(r,ix.ck)).trim(),name:String(g(r,ix.name)).trim(),date:ymd(toDate(g(r,ix.date))),staff:String(g(r,ix.staff)).trim(),
     travel:+g(r,ix.travel)||0,install:+g(r,ix.install)||0,cost:+g(r,ix.cost)||0,
-    wifi:String(g(r,ix.wifi)).trim().toUpperCase(),signup:String(g(r,ix.signup)).trim().toUpperCase(),memo:String(g(r,ix.memo)).trim()}))
+    wifi:String(g(r,ix.wifi)).trim().toUpperCase(),signup:String(g(r,ix.signup)).trim().toUpperCase(),memo:String(g(r,ix.memo)).trim(),manPre:/^(Y|O|1|TRUE)$/i.test(String(g(r,ix.manPre)).trim())||''}))
     .filter(v=>v.ok||v.ck);
 }
 
@@ -767,7 +787,7 @@ function buildSyncPayload(){
   const vs=visits.map(v=>{const c=(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))||null;
     const p=c?null:(v.ok&&pending.get(v.ok))||(v.ck&&pending.get(v.ck))||null;
     const miss=c||p?null:(v.ok&&dropped.get(v.ok))||(v.ck&&dropped.get(v.ck))||{why:'none'};
-    return{ix:c?idx.get(c):null,pend:p?{apply:p.apply,age:p.age??null,region:p.region||''}:null,miss,date:v.date||'',travel:v.travel||0,install:v.install||0,cost:v.cost||0,wifi:v.wifi||'',signup:v.signup||''}});
+    return{ix:c?idx.get(c):null,pend:p?{apply:p.apply,age:p.age??null,region:p.region||''}:null,miss,date:v.date||'',travel:v.travel||0,install:v.install||0,cost:v.cost||0,wifi:v.wifi||'',signup:v.signup||'',manPre:!!v.manPre}});
   return{v:1,ts:Date.now(),cinfo:{daily:cinfo.daily,month:cinfo.month,unknown:cinfo.unknown,dailyMod:cinfo.dailyMod||0,mMax:cinfo.mMax||''},rows,visits:vs};
 }
 function applySyncPayload(p){
@@ -817,9 +837,9 @@ $('tokOk').onclick=()=>{
   $('dlgTok').close();uploadSync(t);
 };
 $('btnTpl').onclick=()=>{
-  downloadVisits([['예: 1788170441450tbcf1uO','','김톡이','2026-10-15','홍길동',40,50,85000,'Y','Y','주문키 또는 고객키 중 하나만 있어도 됨']],'톡이즈_방문설치대상자_양식.xlsx');
+  downloadVisits([['예: 1788170441450tbcf1uO','','김톡이','2026-10-15','홍길동',40,50,85000,'Y','Y','주문키 또는 고객키 중 하나만 있어도 됨','']],'톡이즈_방문설치대상자_양식.xlsx');
 };
-const VISIT_HEAD=['주문키','고객키','고객명','방문일','설치담당','이동시간(분)','설치시간(분)','방문비용(원)','와이파이연결(Y/N)','회원가입완료(Y/N)','비고'];
+const VISIT_HEAD=['주문키','고객키','고객명','방문일','설치담당','이동시간(분)','설치시간(분)','방문비용(원)','와이파이연결(Y/N)','회원가입완료(Y/N)','비고','배송전취소처리(Y)'];
 function downloadVisits(rows,name){
   const aoa=[VISIT_HEAD,...rows];
   const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=VISIT_HEAD.map((_,i)=>({wch:i<2?24:14}));
@@ -837,7 +857,7 @@ $('vAdd').onclick=async()=>{
 };
 $('vExport').onclick=()=>{
   if(!visits.length){alert('저장된 방문 대상자가 없습니다.');return}
-  downloadVisits(visits.map(v=>[v.ok===v.ck?v.ok:v.ok,v.ok===v.ck?'':v.ck,v.name||'',v.date,v.staff,v.travel||'',v.install||'',v.cost||'',v.wifi,v.signup,v.memo]),`톡이즈_방문설치대상자_${ymd(new Date())}.xlsx`);
+  downloadVisits(visits.map(v=>[v.ok===v.ck?v.ok:v.ok,v.ok===v.ck?'':v.ck,v.name||'',v.date,v.staff,v.travel||'',v.install||'',v.cost||'',v.wifi,v.signup,v.memo,v.manPre?'Y':'']),`톡이즈_방문설치대상자_${ymd(new Date())}.xlsx`);
 };
 async function removeVisit(key){
   if(!confirm('이 방문 대상자를 목록에서 뺄까요?'))return;
@@ -897,16 +917,19 @@ function analyze(){
   // 일마감에만 있고 월간누적 미반영인 계약도 매칭은 한다(상태 확인 전, 취소율 계산에서는 제외)
   const vRows=visits.map(v=>{const c=(v.ix!=null&&contracts[v.ix])||(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))
       ||(syncMode?(v.pend?{...v.pend,pre:false,initOk:false,pend:true}:null):(v.ok&&pending.get(v.ok))||(v.ck&&pending.get(v.ck)))||null;
+    const c0=c;
+    // 수기 배송전취소(방문 당일 취소 등): 데이터 근거가 없어 대상자 목록에서 체크한 건. 일마감에 있는 계약이면 최초계약 모수로 본다
+    if(c&&v.manPre)c={...c,ship:'',ret:'',pre:true,pend:false,initOk:c.initOk||!!c.pend,manPre:true};
     const st=!c?'miss':c.pend?'pend':c.pre?'pre':c.ret?'ng':!shipped(c)?'wait':'ok';
     // 미매칭 사유: 일마감에서 찾았지만 판정 불가로 뺀 건인지, 신청자관리 어디에도 없는 건인지
     const miss=c?null:syncMode?(v.miss||null):(v.ok&&dropped.get(v.ok))||(v.ck&&dropped.get(v.ck))||{why:'none'};
-    return{v,c,st,miss}});
-  const vSet=new Set(vRows.filter(x=>x.c).map(x=>x.c));
+    return{v,c,c0,st,miss}});
+  const vSet=new Set(vRows.filter(x=>x.c).map(x=>x.c0));
   const cnt=(arr,cx)=>{const o={};for(const b of BANDS)o[b.k]={n:0,r:0};for(const c of arr){const k=bandOf(c.age);o[k].n++;if(cx(c))o[k].r++}return o};
   const M={};
   for(const m of['init','post']){
     const J=judged[m],X=isCx[m];
-    const V=[...new Set(vRows.filter(x=>x.c&&J(x.c)).map(x=>x.c))];   // 같은 계약을 주문키·고객키로 두 번 넣어도 1건
+    const V=[...new Map(vRows.filter(x=>x.c&&J(x.c)).map(x=>[x.c0,x.c])).values()];   // 같은 계약을 주문키·고객키로 두 번 넣어도 1건
     const all=contracts.filter(c=>!vSet.has(c)&&J(c));
     let pool=all;
     if(V.length){
@@ -1219,12 +1242,27 @@ function renderLog(A){
   $('logTable').innerHTML=`<table><tr><th>주문키</th><th>고객명</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${A.vRows.map(({v,c,st,miss})=>{
     const el=c&&c.ship&&A.asOf?Math.round((A.asOf-toDate(c.ship))/DAY)+'일':'–';
     const mw=st==='pend'?`일마감 계약 확인(신청 ${c.apply?c.apply.slice(5):'?'}) · 월간누적이 ${mMax}까지라 배송·취소 미확인 → 취소율 계산 제외`:missWhy(miss);
-    return`<tr><td>${mask(v.ok||v.ck)||esc(v.sid)}</td><td>${esc(v.name)||'–'}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}${mw?`<div style="font-size:11.5px;color:var(--warn);white-space:normal;min-width:180px;text-align:left">${esc(mw)}</div>`:''}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td>${syncMode?'':`<button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
+    return`<tr><td>${mask(v.ok||v.ck)||esc(v.sid)}</td><td>${esc(v.name)||'–'}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}${c?.manPre?'<div style="font-size:11.5px;color:var(--text-2)">수기 처리</div>':''}${mw?`<div style="font-size:11.5px;color:var(--warn);white-space:normal;min-width:180px;text-align:left">${esc(mw)}</div>`:''}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td style="white-space:nowrap">${syncMode?'':`<button class="btn auth-only" data-edit="${esc(vKey(v))}" style="padding:2px 8px">수정</button> <button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
   ${syncMode?'<p class="note">동기화본 보기 — 고객키·주문키·고객명·비고·설치담당은 공개 동기화 파일에 넣지 않아 "방문 n"으로 표시됩니다. 수정은 원본 데이터가 있는 PC에서 하고 동기화하세요.</p>':''}
-  <p class="note">배송전취소 = 일마감에는 있는데 월간누적에서 사라진 건 (최초계약 기준에서만 취소로 셈). 계약 미매칭 = 방문 대상자의 주문키(우선) 또는 고객키가 톡이즈 계약 목록에 없는 건. 계약 목록은 일마감(최초계약) + 월간누적(배송·반품 상태)을 고객키로 합친 것이라, 일마감에 있는 계약이면 매칭됩니다. 상태 확인 전 = 일마감에서 계약은 확인됐지만 월간누적이 아직 그 신청일까지 없어 배송·취소 여부를 모르는 건 — 취소율 계산에서 빼 두었다가 월간누적(wm_dash 취소율 탭 또는 여기 업로드)이 올라오면 자동으로 판정됩니다.</p>`;
+  <p class="note">배송전취소 = 일마감에는 있는데 월간누적에서 사라진 건 (최초계약 기준에서만 취소로 셈). "수기 처리" = 방문 당일 취소 등으로 [수정]에서 직접 배송전취소로 체크한 건. 계약 미매칭 = 방문 대상자의 주문키(우선) 또는 고객키가 톡이즈 계약 목록에 없는 건. 계약 목록은 일마감(최초계약) + 월간누적(배송·반품 상태)을 고객키로 합친 것이라, 일마감에 있는 계약이면 매칭됩니다. 상태 확인 전 = 일마감에서 계약은 확인됐지만 월간누적이 아직 그 신청일까지 없어 배송·취소 여부를 모르는 건 — 취소율 계산에서 빼 두었다가 월간누적(wm_dash 취소율 탭 또는 여기 업로드)이 올라오면 자동으로 판정됩니다.</p>`;
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-$('logTable').addEventListener('click',e=>{const k=e.target.dataset?.del;if(k)removeVisit(k)});
+$('logTable').addEventListener('click',e=>{const d=e.target.dataset||{};if(d.del)removeVisit(d.del);else if(d.edit)openEdit(d.edit)});
+// 건별 수정 (비운 칸은 비운 대로 저장)
+let editKey='';
+const EF={eName:'name',eDate:'date',eStaff:'staff',eCost:'cost',eTravel:'travel',eInstall:'install',eWifi:'wifi',eSignup:'signup',eMemo:'memo'};
+function openEdit(key){
+  const v=visits.find(x=>vKey(x)===key);if(!v)return;editKey=key;
+  $('eKey').textContent=v.ok===v.ck?'주문키/고객키 '+key:'주문키 '+(v.ok||'–')+' · 고객키 '+(v.ck||'–');
+  for(const[id,f]of Object.entries(EF))$(id).value=v[f]||'';
+  $('eManPre').checked=!!v.manPre;$('dlgEdit').showModal();
+}
+$('eSave').onclick=async()=>{
+  const v=visits.find(x=>vKey(x)===editKey);if(!v||syncMode)return;
+  for(const[id,f]of Object.entries(EF))v[f]=['cost','travel','install'].includes(f)?+$(id).value||0:$(id).value.trim();
+  v.manPre=$('eManPre').checked;
+  await saveVisits();$('dlgEdit').close();render();setStatus('방문 대상자 수정 저장');
+};
 
 // ================= 시작 =================
 (async()=>{
