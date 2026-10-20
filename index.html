@@ -182,7 +182,6 @@ body:not(.authed) .auth-only{display:none!important}
 <header>
   <div>
     <h1>톡이즈 방문설치 — 택배 vs 방문 취소율</h1>
-    <div class="sub">방문설치로 반품(취소)이 줄었는가 · 비용 효과는 참고 탭</div>
   </div>
   <div class="uploads">
     <span id="lastUpd" style="font-size:12.5px;color:var(--text-2)"></span>
@@ -302,6 +301,7 @@ body:not(.authed) .auth-only{display:none!important}
     <h2>방문 대상자 직접 입력</h2>
     <div class="form">
       <label>주문키 또는 고객키 *<input id="vKey" placeholder="CMS 신청자관리의 주문키/고객키"></label>
+      <label>고객명<input id="vName" placeholder="이 PC에만 저장"></label>
       <label>방문일<input type="date" id="vDate"></label>
       <label>설치담당<input id="vStaff"></label>
       <label>방문비용 (원)<input type="number" id="vCost" step="5000"></label>
@@ -342,7 +342,7 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="form" style="grid-template-columns:1fr"><label>GitHub 토큰 (이 PC에만 저장)<input type="password" id="tokInput" placeholder="github_pat_… 또는 ghp_…" autocomplete="off"></label></div>
   <p class="note">업로드는 <code>wminfobin-byte/talkis_visit</code> 레포 쓰기 권한(Contents: Read and write)이 있는 토큰을 가진 사람만 할 수 있습니다.<br>
   GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → 저장소 <code>talkis_visit</code> 선택 → Contents 읽기/쓰기.<br>
-  올라가는 데이터에는 <b>고객키·주문키·비고·설치담당이 들어가지 않습니다</b> (공개 레포). 다른 PC는 대시보드를 열 때 자동으로 받아 봅니다.</p>
+  올라가는 데이터에는 <b>고객키·주문키·고객명·비고·설치담당이 들어가지 않습니다</b> (공개 레포). 다른 PC는 대시보드를 열 때 자동으로 받아 봅니다.</p>
   <div class="dlg-f"><button class="btn" data-close>취소</button><button class="btn primary" id="tokOk">저장하고 동기화</button></div>
 </dialog>
 
@@ -489,15 +489,15 @@ function parseContracts(rows){
 }
 function findCol(h,keys){return h.findIndex(x=>keys.some(k=>x.includes(k)))}
 // 방문 대상자 파일: 대상자 양식 또는 CMS 고객관리(DB수 파일 WM_고객관리_*.xlsx) 양식 그대로.
-// 고객관리 양식은 고객키(G)만 쓰고 고객명·전화번호 등 나머지 열은 읽지 않는다.
+// 고객관리 양식은 고객키(G)·고객명만 쓰고 전화번호 등 나머지 열은 읽지 않는다. 고객명은 이 PC(IDB)에만 두고 동기화하지 않는다.
 function parseVisits(rows){
   const h=rows[0].map(x=>String(x).replace(/\s/g,''));
-  const ix={ok:findCol(h,['주문키']),ck:findCol(h,['고객키']),date:findCol(h,['방문일']),staff:findCol(h,['설치담당','기사','담당']),
+  const ix={ok:findCol(h,['주문키']),ck:findCol(h,['고객키']),name:findCol(h,['고객명','성명']),date:findCol(h,['방문일']),staff:findCol(h,['설치담당','기사','담당']),
     travel:findCol(h,['이동']),install:findCol(h,['설치시간','소요']),cost:findCol(h,['비용']),wifi:findCol(h,['와이파이','wifi','WIFI']),
     signup:findCol(h,['회원가입']),memo:findCol(h,['비고','메모'])};
   if(ix.ok<0&&ix.ck<0)throw new Error('방문 기록 파일에 "주문키" 또는 "고객키" 열이 없습니다.');
   const g=(r,i)=>i>=0?r[i]:'';
-  return rows.slice(1).map(r=>({ok:String(g(r,ix.ok)).trim(),ck:String(g(r,ix.ck)).trim(),date:ymd(toDate(g(r,ix.date))),staff:String(g(r,ix.staff)).trim(),
+  return rows.slice(1).map(r=>({ok:String(g(r,ix.ok)).trim(),ck:String(g(r,ix.ck)).trim(),name:String(g(r,ix.name)).trim(),date:ymd(toDate(g(r,ix.date))),staff:String(g(r,ix.staff)).trim(),
     travel:+g(r,ix.travel)||0,install:+g(r,ix.install)||0,cost:+g(r,ix.cost)||0,
     wifi:String(g(r,ix.wifi)).trim().toUpperCase(),signup:String(g(r,ix.signup)).trim().toUpperCase(),memo:String(g(r,ix.memo)).trim()}))
     .filter(v=>v.ok||v.ck);
@@ -519,6 +519,7 @@ function contractKind(folder,name){
 let src=[];        // [{name,kind,mod,rows}] 파일별 톡이즈 슬림 행
 let wmSrc=[];      // wm_dash 취소율 탭에 올린 월간누적 (저장하지 않고 매번 wm_dash 저장소에서 읽음)
 let cinfo={daily:0,month:0,unknown:0,dailyRet:0};
+let period=null;   // 상태줄 집계 기간 [시작,끝] = 비교에 들어간 계약(방문군+대조군) 신청일 최소~최대
 // wm_dash와 talkis_visit은 같은 출처(wminfobin-byte.github.io)라 IndexedDB를 같이 쓴다.
 // wm_dash 취소율 탭 DB(cancelDashboard/files)의 '신청자(전체)' = type 'app' 파일을 월간누적으로 읽는다.
 let wmKeySig=null;
@@ -754,7 +755,7 @@ applyAuth();
 // ================= 동기화 (GitHub, 공개 레포) =================
 // 올리기: 원본(일마감)이 있는 PC에서 [동기화] 버튼 → 토큰으로 data.json 교체. 자동 업로드 없음.
 // 받기: 원본이 없는 PC는 열 때 data.json을 받아 보기 전용으로 표시.
-// 공개 레포라 고객키·주문키·비고·설치담당은 넣지 않는다. 방문 대상자는 계약 순번(ix)으로 연결.
+// 공개 레포라 고객키·주문키·고객명·비고·설치담당은 넣지 않는다. 방문 대상자는 계약 순번(ix)으로 연결.
 const SYNC_REPO='wminfobin-byte/talkis_visit',SYNC_PATH='data.json',TOKEN_KEY='talkisVisit.ghToken';
 let syncMode=false,syncTs=0;   // syncMode=true: 동기화본을 보는 중 (이 PC에 원본 없음)
 const hasLocalSource=()=>src.some(s=>s.kind==='daily');
@@ -808,7 +809,7 @@ $('btnSync').onclick=async()=>{
   }
   let token='';try{token=localStorage.getItem(TOKEN_KEY)||''}catch(e){}
   if(!token){$('tokInput').value='';$('dlgTok').showModal();return}
-  if(confirm(`이 PC의 데이터를 GitHub(공개 레포)에 올려 다른 PC에서도 보이게 합니다.\n고객키·주문키·비고·설치담당은 올리지 않습니다.\n\n계약 ${contracts.length.toLocaleString()}건 · 방문 대상자 ${visits.length}건 — 진행할까요?`))uploadSync(token);
+  if(confirm(`이 PC의 데이터를 GitHub(공개 레포)에 올려 다른 PC에서도 보이게 합니다.\n고객키·주문키·고객명·비고·설치담당은 올리지 않습니다.\n\n계약 ${contracts.length.toLocaleString()}건 · 방문 대상자 ${visits.length}건 — 진행할까요?`))uploadSync(token);
 };
 $('tokOk').onclick=()=>{
   const t=$('tokInput').value.trim();if(!t){alert('토큰을 입력하세요.');return}
@@ -816,9 +817,9 @@ $('tokOk').onclick=()=>{
   $('dlgTok').close();uploadSync(t);
 };
 $('btnTpl').onclick=()=>{
-  downloadVisits([['예: 1788170441450tbcf1uO','','2026-10-15','홍길동',40,50,85000,'Y','Y','주문키 또는 고객키 중 하나만 있어도 됨']],'톡이즈_방문설치대상자_양식.xlsx');
+  downloadVisits([['예: 1788170441450tbcf1uO','','김톡이','2026-10-15','홍길동',40,50,85000,'Y','Y','주문키 또는 고객키 중 하나만 있어도 됨']],'톡이즈_방문설치대상자_양식.xlsx');
 };
-const VISIT_HEAD=['주문키','고객키','방문일','설치담당','이동시간(분)','설치시간(분)','방문비용(원)','와이파이연결(Y/N)','회원가입완료(Y/N)','비고'];
+const VISIT_HEAD=['주문키','고객키','고객명','방문일','설치담당','이동시간(분)','설치시간(분)','방문비용(원)','와이파이연결(Y/N)','회원가입완료(Y/N)','비고'];
 function downloadVisits(rows,name){
   const aoa=[VISIT_HEAD,...rows];
   const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=VISIT_HEAD.map((_,i)=>({wch:i<2?24:14}));
@@ -829,14 +830,14 @@ $('vAdd').onclick=async()=>{
   const key=$('vKey').value.trim();if(!key){alert('주문키 또는 고객키를 입력하세요.');return}
   if(syncMode){alert('동기화본을 보는 중이라 대상자를 추가할 수 없습니다. 원본 데이터가 있는 PC에서 입력하고 동기화하세요.');return}
   // CMS 주문키/고객키 어느 쪽이든 매칭되도록 양쪽에 넣는다
-  await upsertVisits([{ok:key,ck:key,date:$('vDate').value,staff:$('vStaff').value.trim(),travel:+$('vTravel').value||0,install:+$('vInstall').value||0,
+  await upsertVisits([{ok:key,ck:key,name:$('vName').value.trim(),date:$('vDate').value,staff:$('vStaff').value.trim(),travel:+$('vTravel').value||0,install:+$('vInstall').value||0,
     cost:+$('vCost').value||0,wifi:$('vWifi').value,signup:$('vSignup').value,memo:$('vMemo').value.trim()}]);
-  ['vKey','vTravel','vInstall','vMemo'].forEach(id=>$(id).value='');
+  ['vKey','vName','vTravel','vInstall','vMemo'].forEach(id=>$(id).value='');
   render();setStatus(`방문 대상자 추가 · 전체 ${visits.length}건`);
 };
 $('vExport').onclick=()=>{
   if(!visits.length){alert('저장된 방문 대상자가 없습니다.');return}
-  downloadVisits(visits.map(v=>[v.ok===v.ck?v.ok:v.ok,v.ok===v.ck?'':v.ck,v.date,v.staff,v.travel||'',v.install||'',v.cost||'',v.wifi,v.signup,v.memo]),`톡이즈_방문설치대상자_${ymd(new Date())}.xlsx`);
+  downloadVisits(visits.map(v=>[v.ok===v.ck?v.ok:v.ok,v.ok===v.ck?'':v.ck,v.name||'',v.date,v.staff,v.travel||'',v.install||'',v.cost||'',v.wifi,v.signup,v.memo]),`톡이즈_방문설치대상자_${ymd(new Date())}.xlsx`);
 };
 async function removeVisit(key){
   if(!confirm('이 방문 대상자를 목록에서 뺄까요?'))return;
@@ -846,8 +847,10 @@ async function refreshStatus(){
   renderUpInfo();
   if($('btnDir').dataset.reauth)return; // 재허용 안내 문구 유지
   const ci=cinfo;
-  if(syncMode)return setStatus(`동기화본 보기 (${fmtTs(syncTs)} 업로드분) — 계약 ${contracts.length.toLocaleString()}건 · 방문 대상자 ${visits.length}건  |  기준일 ${ymd(asOfDate())||'–'}`);
-  setStatus(`${syncTs?'마지막 동기화 '+fmtTs(syncTs)+'  |  ':''}${dirHandle?'공용폴더 "'+dirHandle.name+'"  |  ':''}계약: ${src.length||wmSrc.length?`일마감 ${ci.daily}개(공용폴더) · 월간누적 ${ci.month}개(${ci.wm?`wm_dash 취소율 탭 ${ci.wm}`:''}${ci.wm&&ci.month>ci.wm?' + ':''}${ci.month>ci.wm?`업로드 ${ci.month-ci.wm}`:''}${ci.month?'':'없음'}) · 톡이즈 ${contracts.length.toLocaleString()}건${ci.daily?'':' (일마감 없음 → 최초계약 기준 불가)'}${ci.month?'':' — wm_dash 취소율 탭에 신청자관리(조회 기간 전체)를 올리거나 여기서 월간누적 업로드'}${ci.unknown?` · 월간 파일 없는 달 ${ci.unknown}건 제외`:''}`:'미연결 (기준선은 내장 실측치 사용)'}  |  방문 대상자: ${visits.length}건  |  기준일 ${ymd(asOfDate())||'–'}`);
+  const per=`집계 기간 ${period?ymd(period[0])+' ~ '+ymd(period[1]):'–'}`;
+  if(syncMode)return setStatus(`동기화본 보기 (${fmtTs(syncTs)} 업로드분)  |  방문 대상자: ${visits.length}건  |  ${per}`);
+  const warn=!(src.length||wmSrc.length)?'계약 파일 미연결 (기준선은 내장 실측치 사용)  |  ':!ci.month?'월간누적 없음 — wm_dash 취소율 탭에 신청자관리를 올리거나 여기서 업로드  |  ':!ci.daily?'일마감 없음 → 최초계약 기준 불가  |  ':'';
+  setStatus(`${syncTs?'마지막 동기화 '+fmtTs(syncTs)+'  |  ':''}${warn}방문 대상자: ${visits.length}건  |  ${per}`);
 }
 
 // ================= 설정 바인딩 =================
@@ -929,6 +932,9 @@ function analyze(){
       avail:m==='post'||contracts.some(c=>c.initOk)};
   }
   // wm_dash 표 형식 (연령보정 전): 최초계약·취소·배취·배송후취소
+  let lo=Infinity,hi=-Infinity;
+  for(const m of['init','post'])for(const c of[...M[m].V,...M[m].pool]){const x=toDate(c.apply)?.getTime();if(x<lo)lo=x;if(x>hi)hi=x}
+  period=lo<=hi?[new Date(lo),new Date(hi)]:null;
   const wm=arr=>{const n=arr.length,pre=arr.filter(c=>c.pre).length,post=arr.filter(c=>!c.pre&&c.ret).length;return{n,pre,post,tot:pre+post,ship:n-pre}};
   // 기본 필드(ROI 등)는 방문이 영향을 주는 배송후 기준
   return{asOf,obs,lead,vRows,M,...M.post,wmV:wm(M.init.V),wmC:wm(M.init.pool),
@@ -1210,11 +1216,11 @@ function renderLog(A){
   const missWhy=m=>!m?'':m.why==='unknown'?`일마감에 있음(신청 ${m.apply?m.apply.slice(5):'?'}) · 월간누적 미반영 — 월간 최신 신청일 ${mMax}`
     :m.why==='dailyRet'?`일마감에 있음 · 일마감 시점에 이미 반품일 있음 → 최초계약에서 제외`
     :'톡이즈 일마감·월간누적 어디에도 이 키 없음 (키 오타·다른 브랜드·아직 계약 전)';
-  $('logTable').innerHTML=`<table><tr><th>주문키</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${A.vRows.map(({v,c,st,miss})=>{
+  $('logTable').innerHTML=`<table><tr><th>주문키</th><th>고객명</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${A.vRows.map(({v,c,st,miss})=>{
     const el=c&&c.ship&&A.asOf?Math.round((A.asOf-toDate(c.ship))/DAY)+'일':'–';
     const mw=st==='pend'?`일마감 계약 확인(신청 ${c.apply?c.apply.slice(5):'?'}) · 월간누적이 ${mMax}까지라 배송·취소 미확인 → 취소율 계산 제외`:missWhy(miss);
-    return`<tr><td>${mask(v.ok||v.ck)||esc(v.sid)}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}${mw?`<div style="font-size:11.5px;color:var(--warn);white-space:normal;min-width:180px;text-align:left">${esc(mw)}</div>`:''}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td>${syncMode?'':`<button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
-  ${syncMode?'<p class="note">동기화본 보기 — 고객키·주문키·비고·설치담당은 공개 동기화 파일에 넣지 않아 "방문 n"으로 표시됩니다. 수정은 원본 데이터가 있는 PC에서 하고 동기화하세요.</p>':''}
+    return`<tr><td>${mask(v.ok||v.ck)||esc(v.sid)}</td><td>${esc(v.name)||'–'}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}${mw?`<div style="font-size:11.5px;color:var(--warn);white-space:normal;min-width:180px;text-align:left">${esc(mw)}</div>`:''}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td>${syncMode?'':`<button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
+  ${syncMode?'<p class="note">동기화본 보기 — 고객키·주문키·고객명·비고·설치담당은 공개 동기화 파일에 넣지 않아 "방문 n"으로 표시됩니다. 수정은 원본 데이터가 있는 PC에서 하고 동기화하세요.</p>':''}
   <p class="note">배송전취소 = 일마감에는 있는데 월간누적에서 사라진 건 (최초계약 기준에서만 취소로 셈). 계약 미매칭 = 방문 대상자의 주문키(우선) 또는 고객키가 톡이즈 계약 목록에 없는 건. 계약 목록은 일마감(최초계약) + 월간누적(배송·반품 상태)을 고객키로 합친 것이라, 일마감에 있는 계약이면 매칭됩니다. 상태 확인 전 = 일마감에서 계약은 확인됐지만 월간누적이 아직 그 신청일까지 없어 배송·취소 여부를 모르는 건 — 취소율 계산에서 빼 두었다가 월간누적(wm_dash 취소율 탭 또는 여기 업로드)이 올라오면 자동으로 판정됩니다.</p>`;
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
