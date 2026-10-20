@@ -915,7 +915,7 @@ function analyze(){
   const byOk=new Map(contracts.map(c=>[c.ok,c])),byCk=new Map(contracts.filter(c=>c.ck).map(c=>[c.ck,c]));
   // 동기화본은 키가 없고 계약 순번(ix)으로 연결됨
   // 일마감에만 있고 월간누적 미반영인 계약도 매칭은 한다(상태 확인 전, 취소율 계산에서는 제외)
-  const vRows=visits.map(v=>{const c=(v.ix!=null&&contracts[v.ix])||(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))
+  const vRows=visits.map(v=>{let c=(v.ix!=null&&contracts[v.ix])||(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))
       ||(syncMode?(v.pend?{...v.pend,pre:false,initOk:false,pend:true}:null):(v.ok&&pending.get(v.ok))||(v.ck&&pending.get(v.ck)))||null;
     const c0=c;
     // 수기 배송전취소(방문 당일 취소 등): 데이터 근거가 없어 대상자 목록에서 체크한 건. 일마감에 있는 계약이면 최초계약 모수로 본다
