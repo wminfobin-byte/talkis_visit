@@ -96,6 +96,12 @@ main{padding:20px 28px 40px;max-width:1320px;width:100%;margin:0 auto}
 .panel{display:none}.panel.on{display:block}
 .card{background:var(--surface);border:1px solid transparent;border-radius:16px;padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
 .card h2{font-size:15.5px;margin:0 0 14px;letter-spacing:-.2px}
+.fold>summary{font-size:15.5px;font-weight:700;letter-spacing:-.2px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:"";width:7px;height:7px;border-right:2px solid var(--text-2);border-bottom:2px solid var(--text-2);transform:rotate(-45deg);transition:transform .15s;margin-right:4px}
+.fold[open]>summary::before{transform:rotate(45deg)}
+.fold-hint{margin-left:auto;font-size:12.5px;font-weight:400;color:var(--text-2)}
+.fold[open] .fold-hint{display:none}
 .card h3{font-size:14px;margin:16px 0 8px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
 .kpi{background:var(--visit-soft);border-radius:16px;padding:16px 18px}
@@ -204,7 +210,7 @@ body:not(.authed) .auth-only{display:none!important}
   </div>
   <div id="verdict"></div>
   <div class="card hero-card" id="hero"></div>
-  <div class="card"><h2>이 차이를 믿어도 될까요? — 판정 기준</h2><div id="sigExplain"></div></div>
+  <details class="card fold"><summary>이 차이를 믿어도 될까요? — 판정 기준<span class="fold-hint">펼치기</span></summary><div id="sigExplain" style="margin-top:14px"></div></details>
   <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
   <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
     <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
