@@ -183,6 +183,35 @@ body:not(.authed) .auth-only{display:none!important}
 .rv-bar{height:6px;border-radius:99px;background:var(--border);overflow:hidden;grid-column:1/-1}
 .rv-bar i{display:block;height:100%;background:var(--accent)}
 .calls{letter-spacing:2px;color:var(--accent)}.calls s{text-decoration:none;color:var(--border)}
+/* 결론 카드 (임플리케이션 · 개선 의견) — 눈에 띄게 */
+.card.key{position:relative;overflow:hidden;padding-top:24px;word-break:keep-all}
+.card.key::before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.card.key h2{font-size:19px;margin-bottom:6px}
+.key-eye{font-size:11.5px;font-weight:800;letter-spacing:.5px;color:var(--accent);margin-bottom:2px}
+.key-sub{font-size:12.5px;color:var(--text-2);margin:0 0 6px}
+.ins{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;padding:16px 0;border-top:1px solid var(--border);align-items:start}
+.ins:first-of-type{border-top:0}
+.ins-st{border-radius:14px;padding:14px 10px;text-align:center;background:var(--tbg);color:var(--tc)}
+.ins-st .v{font-size:27px;font-weight:800;line-height:1.1;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.ins-st .l{font-size:11.5px;margin-top:4px;color:var(--text-2);line-height:1.35}
+.ins-t{display:flex;gap:10px;align-items:flex-start;font-size:16px;font-weight:800;line-height:1.4;letter-spacing:-.2px}
+.ins-t .n{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:12.5px;margin-top:1px}
+.ins-d{margin:6px 0 0 34px;font-size:13.5px;line-height:1.65;color:var(--text-2)}
+.ins-go{display:inline-block;margin:8px 0 0 34px;padding:3px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;text-decoration:none}
+.ins-go:hover{text-decoration:underline}
+.fxs{display:grid;grid-template-columns:190px minmax(0,1fr);gap:18px;padding:18px 0;border-top:1px solid var(--border);position:relative;scroll-margin-top:16px}
+.fxs:first-of-type{border-top:0}
+.fxs-l{display:flex;gap:12px;align-items:flex-start}
+.fxs-n{flex:none;width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;background:var(--tc)}
+.fxs-s{font-size:17px;font-weight:800;color:var(--tc);line-height:1.2;margin-top:6px}
+.fxs-why{font-size:12px;color:var(--text-2);margin-top:6px;line-height:1.5}
+.fxs ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.fxs li{position:relative;padding:9px 12px 9px 34px;border-radius:10px;background:var(--tbg);font-size:13px;line-height:1.5}
+.fxs li::before{content:'✓';position:absolute;left:12px;top:9px;font-weight:800;color:var(--tc)}
+.fxs.flash{animation:fxflash 1.4s ease}
+@keyframes fxflash{0%,40%{background:var(--accent-soft)}100%{background:transparent}}
+@media(max-width:760px){.ins{grid-template-columns:1fr;gap:10px}.ins-st{display:flex;align-items:baseline;gap:10px;text-align:left;padding:10px 14px}.ins-st .l{margin:0}
+  .ins-d,.ins-go{margin-left:0}.fxs{grid-template-columns:1fr;gap:12px}}
 #revRows td{white-space:normal;text-align:left;vertical-align:top}#revRows td.n{white-space:nowrap}
 .drop small{display:block;font-size:11.5px;color:var(--muted);margin-top:4px}
 .drop:hover,.drop.over{border-color:var(--accent);color:var(--text)}
@@ -233,11 +262,12 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
   <!-- 결과 리뷰 (방문·전화케어 현장 기록) -->
   <div class="kpis" id="revKpis"></div>
+  <!-- 결론 두 카드는 결과 리뷰 KPI 바로 아래 (2026-10-26 사용자 요청 — 핵심이라 비중 있게) -->
+  <div class="card key"><div class="key-eye">결론</div><h2>임플리케이션 — 방문케어에서 확인한 것</h2><div id="revImpl"></div></div>
+  <div class="card key"><div class="key-eye">실행</div><h2>개선 의견 — 단계별로 바꿀 것</h2><div id="revFix"></div></div>
   <div class="card"><h2>취소 사유 — 누가 막을 수 있었나</h2><div id="revCancel"></div></div>
   <div class="card"><h2>현장에서 반복된 문제</h2><div id="revIssues"></div></div>
   <div class="card"><h2>전화케어 진행</h2><div id="revCall"></div></div>
-  <div class="card guide"><h2>임플리케이션</h2><div id="revImpl"></div></div>
-  <div class="card guide"><h2>개선 의견</h2><div id="revFix"></div></div>
   <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
     <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
   <div class="card"><h2 id="daysTitle">기간별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
@@ -1371,7 +1401,42 @@ let REV_ISSUES=[
  {t:'발음 인식이 잘 안 됨',ns:[24,30],d:'말하기 연습·직업 소개 문장에서 인식 실패가 반복.',fx:'고연령 발음 인식 기준 완화 검토'},
 ];
 let REV_SALES=['가족 반대','계약 금액 오인·납부 부담','난청으로 학습 불가'],REV_IMPL=null,REV_FIX=null,REV_CALLNOTE=null,REV_SRC='';
-// review.json 형식: {asof, src, rows:[{n,age,sex,sido,vd,visit,cd?,rc?,ab?,calls,next?,note,id:[마스킹 이름, 마스킹 번호]}], issues:[{t,ns,d,fx}], good:[{t,ns,d}], sales:[사유], impl:[{t,d}], fix:[[단계,내용]], callNote}
+// review.json 형식: {asof, src, rows:[{n,age,sex,sido,vd,visit,cd?,rc?,ab?,calls,next?,note,id:[마스킹 이름, 마스킹 번호]}], issues:[{t,ns,d,fx}], good:[{t,ns,d}], sales:[사유],
+//   impl:[{t 결론, d 근거, k 핵심 숫자, kl 숫자 설명, tone good|bad|warn|accent, go 연결할 개선 단계}],
+//   fix:[{s 단계, why 이유(관련 건수), items:[할 일...]}]  (옛 형식 [단계, "쉼표로 이은 내용"]도 읽음), callNote}
+// review.json을 못 받을 때 쓰는 스냅샷 (2026-10-26)
+const DEF_IMPL=[
+ {t:'방문은 설치 장벽을 없앤다.',d:'와이파이 연결이 막힌 집 9곳을 현장에서 연결했고, 설치 실패 해지는 0건.',k:'0건',kl:'설치 실패로 인한 해지',tone:'good',go:'방문 전'},
+ {t:'남은 취소는 "계속 학습할 수 있느냐"에서 생긴다.',d:'학습·조작 난이도·글씨 해지 3건(시간 부족으로 해지 의사를 밝힌 1건은 반품 전이라 별도). 방문 후 첫 주 케어와 쉬운 시작 단계가 같이 가야 한다.',k:'3건',kl:'학습·조작 난이도 해지',tone:'bad',go:'방문 후'},
+ {t:'일부 취소는 방문 전에 정해져 있다.',d:'가족 반대·계약 금액 오인·난청 해지 3건은 방문 비용을 써도 막을 수 없다 → 판매 단계에서 걸러야 한다.',k:'3건',kl:'방문으로 못 막는 해지',tone:'warn',go:'판매'},
+ {t:'고객은 1회 방문보다 지속적인 케어를 원한다.',d:'만족 고객 다수가 재방문·추가 안내를 원함. 희망 조건은 월 1회 3~4만 원, 필요 시 1회 2~3만 원 등으로 엇갈림 → 저빈도·호출형 유료 방문부터 검토 여지.',k:'12명',kl:'재방문·추가 케어 희망',tone:'accent',go:'방문 후'},
+ {t:'방문 1건은 약 1시간(45~85분) 걸린다.',d:'25분으로 줄인 건은 해지 의사로 이어짐. ⑤ 탭의 하루 처리 건수(수도권 5건) 가정을 다시 봐야 한다.',k:'약 60분',kl:'방문 1건 소요 시간',tone:'',go:'방문 중'},
+ {t:'제품의 고연령 친화성이 한계.',d:'글씨 크기·버튼 수·발음 인식은 방문으로 일시적으로만 보완된다.',k:'9건',kl:'글씨·버튼 불편 사례',tone:'bad',go:'제품'}];
+const DEF_FIX=[
+ {s:'판매',why:'판매 단계에서 정해진 해지 3건 · 계약 내용을 잘 모름 4건',items:['상담은 천천히 설명','계약 직후 확인 콜 — 월 납부액·약정·확인 결제(5천 원)','가족 동의 여부 확인','청력·시력 확인','설치가 어려운 고객(인터넷 없음 등)은 방문 우선 배정']},
+ {s:'방문 전',why:'와이파이·인터넷 문제 9건 · 일정·배송·출입 7건',items:['해피콜로 인터넷 유무·공유기 비밀번호 확인','기기 도착 확인 후 방문 확정','예약 때 방문자(본사 직원) 안내, 전날 이름·사진 문자','아파트는 도착 즉시 주차 등록 (단지별 인증·출입 방법 확인)','메모지·펜·커터칼 지참']},
+ {s:'방문 중',why:'본과정이 어려워 낮춰 시작 11건 · 방문 1건 약 60분',items:['최소 60분 확보','처음영어·보카부터 시작해 목표·주간 학습량 설정','"학습 순서 한 장 안내서" 표준화','아이디·비밀번호 규칙 통일','레벨테스트 건너뛰고 자기소개부터','제출하기는 막히기 전에 먼저 시범','화면 꺼짐 시간 연장']},
+ {s:'방문 후',why:'해지 요청이 방문 후 5일 안에 몰림 · 재방문 희망 12명',items:['다음 날 1차 전화 + 첫 주 집중 케어','재방문·원격케어 경로 마련 (월 1회·호출형 유료 방문 수요 확인)','일시불 전환 절차']},
+ {s:'제품',why:'글씨·버튼 불편 9건 · 계정·이용권 오류 4건 · 발음 인식 2건',items:['글씨 확대(연말 예정)·간편 모드','"제출" 단계 간소화','발음 인식 완화','아이디 중복 오류·이용권 자동 등록·0/O 혼동 수정','관심사 "종교"·직업 "주부" 등 고연령 항목 추가','모범답안 한글 해석']}];
+// 옛 형식 문자열은 괄호·따옴표 밖의 쉼표로 나눠 항목으로
+function splitItems(t){const out=[];let cur='',dep=0,q=false;for(const ch of String(t)){if(ch==='"')q=!q;if(!q&&'(（'.includes(ch))dep++;if(!q&&')）'.includes(ch))dep=Math.max(0,dep-1);if(ch===','&&!dep&&!q){out.push(cur.trim());cur=''}else cur+=ch}if(cur.trim())out.push(cur.trim());return out}
+const fixOf=f=>Array.isArray(f)?{s:f[0],why:'',items:Array.isArray(f[1])?f[1]:splitItems(f[1])}:{s:f.s,why:f.why||'',items:Array.isArray(f.items)?f.items:splitItems(f.items||'')};
+const FX_TONE={'판매':['var(--warn)','var(--warn-bg)'],'제품':['var(--s-ship)','var(--ship-soft)']};
+const IN_TONE={good:['var(--good)','var(--good-bg)'],bad:['var(--bad)','var(--bad-bg)'],warn:['var(--warn)','var(--warn-bg)'],accent:['var(--accent)','var(--accent-soft)']};
+function renderKeyCards(N){
+  const F=(REV_FIX||DEF_FIX).map(fixOf),I=REV_IMPL||DEF_IMPL;
+  const fi=s=>F.findIndex(f=>f.s===s);
+  $('revImpl').innerHTML=`<p class="key-sub">방문 대상 ${N}명의 방문·전화케어 기록에서 나온 결론 ${I.length}가지</p>`+I.map((x,i)=>{
+    const [c,bg]=IN_TONE[x.tone]||['var(--text)','var(--surface-2)'],g=x.go&&fi(x.go)>=0?fi(x.go):-1;
+    return`<div class="ins">${x.k?`<div class="ins-st" style="--tc:${c};--tbg:${bg}"><div class="v">${esc(x.k)}</div><div class="l">${esc(x.kl||'')}</div></div>`:`<div class="ins-st" style="--tc:var(--accent);--tbg:var(--accent-soft)"><div class="v">${i+1}</div></div>`}
+      <div><div class="ins-t"><span class="n">${i+1}</span><span>${esc(x.t)}</span></div><div class="ins-d">${esc(x.d)}</div>
+      ${g>=0?`<a class="ins-go" href="#fxs-${g}" data-fx="${g}">→ 개선 의견 · ${esc(F[g].s)}</a>`:''}</div></div>`}).join('');
+  $('revFix').innerHTML=`<p class="key-sub">판매부터 제품까지 고객이 거치는 순서대로 · 할 일 ${F.reduce((a,f)=>a+f.items.length,0)}가지</p>`+F.map((f,i)=>{
+    const [c,bg]=FX_TONE[f.s]||['var(--accent)','var(--accent-soft)'];
+    return`<div class="fxs" id="fxs-${i}" style="--tc:${c};--tbg:${bg}"><div class="fxs-l"><span class="fxs-n">${i+1}</span><div><div class="fxs-s">${esc(f.s)}</div>${f.why?`<div class="fxs-why">${esc(f.why)}</div>`:''}</div></div>
+      <ul>${f.items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`}).join('');
+}
+document.addEventListener('click',e=>{const a=e.target.closest('a[data-fx]');if(!a)return;e.preventDefault();const el=$('fxs-'+a.dataset.fx);if(!el)return;el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')});
 function applyReview(j){
   if(!j||!Array.isArray(j.rows)||!j.rows.length)return false;
   REV_ASOF=j.asof||REV_ASOF;REV=j.rows;REV_ID={};for(const r of REV)if(Array.isArray(r.id))REV_ID[r.n]=r.id;
@@ -1476,21 +1541,7 @@ function renderReview(A){
   const nextWk=act.filter(r=>r.next).sort((a,b)=>a.next<b.next?-1:1);
   $('revCall').innerHTML=byC.map(([c,rs])=>`<div class="rv-row"><span>${dots(c)} <span class="w">${c}회 완료</span></span><b>${rs.length}명</b></div>`).join('')
     +`<p class="note"><b>다음 예정 ${nextWk.length}건</b> (${nextWk[0]?.next.replace('-','/')}~${nextWk.at(-1)?.next.replace('-','/')}). ${REV_CALLNOTE!=null?esc(REV_CALLNOTE):'1차 전 고객은 대부분 10/20 이후 방문. 전화를 불편해하는 고객 1명은 고객이 먼저 연락하기로 함.'}</p>`;
-  if(REV_IMPL)$('revImpl').innerHTML=`<ol>${REV_IMPL.map(x=>`<li><b>${esc(x.t)}</b> ${esc(x.d)}</li>`).join('')}</ol>`;
-  else $('revImpl').innerHTML=`<ol>
-    <li><b>방문은 설치 장벽을 없앤다.</b> 와이파이 연결이 막힌 집 ${REV_ISSUES[1].ns.length}곳을 현장에서 연결했고, 설치 실패 해지는 0건.</li>
-    <li><b>남은 취소는 "계속 학습할 수 있느냐"에서 생긴다.</b> 학습·조작 난이도·글씨 해지 3건(시간 부족으로 해지 의사를 밝힌 1건은 반품 전이라 별도). 방문 후 첫 주 케어와 쉬운 시작 단계가 같이 가야 한다.</li>
-    <li><b>일부 취소는 방문 전에 정해져 있다.</b> 가족 반대·계약 금액 오인·난청 해지 3건은 방문 비용을 써도 막을 수 없다 → 판매 단계에서 걸러야 한다.</li>
-    <li><b>고객은 1회 방문보다 지속적인 케어를 원한다.</b> 만족 고객 다수가 재방문·추가 안내를 원하고, 월 1회 3~4만 원 유료 방문도 괜찮다는 반응이 나옴 → 유료 정기 방문 상품 검토 여지.</li>
-    <li><b>방문 1건은 약 1시간(57~85분) 걸린다.</b> 25분으로 줄인 건은 해지 의사로 이어짐. ⑤ 탭의 하루 처리 건수(수도권 5건) 가정을 다시 봐야 한다.</li>
-    <li><b>제품의 고연령 친화성이 한계.</b> 글씨 크기·버튼 수·발음 인식은 방문으로 일시적으로만 보완된다.</li></ol>`;
-  if(REV_FIX)$('revFix').innerHTML=`<div class="tw"><table class="rv-fix">${REV_FIX.map(([s,t])=>`<tr><td>${esc(s)}</td><td>${esc(t)}</td></tr>`).join('')}</table></div>`;
-  else $('revFix').innerHTML=`<div class="tw"><table class="rv-fix">
-    <tr><td>판매</td><td>계약 직후 확인 콜 — 월 납부액·약정, 가족 동의, 청력·시력. 설치가 어려운 고객(인터넷 없음 등)을 방문 우선 배정</td></tr>
-    <tr><td>방문 전</td><td>해피콜로 인터넷·공유기 비밀번호 확인, 기기 도착 확인 후 방문 확정, 예약 때 누가 가는지(본사 직원) 알리고 전날 방문자 이름·사진 문자, 아파트는 도착 즉시 주차 등록</td></tr>
-    <tr><td>방문 중</td><td>최소 60분 확보, 처음영어·보카부터 시작해 목표·주간 학습량 설정, "학습 순서 한 장 안내서" 표준화, 아이디·비밀번호 규칙 통일</td></tr>
-    <tr><td>방문 후</td><td>다음 날 1차 전화 + 첫 주 집중 케어(해지 요청이 5일 안에 몰림), 재방문·원격케어 경로(월 1회 유료 방문 수요 확인), 일시불 전환 절차</td></tr>
-    <tr><td>제품</td><td>글씨 확대(연말 예정)·간편 모드, "제출" 단계 간소화, 발음 인식 완화, 아이디 중복 오류·이용권 0/O 혼동 수정, 관심사 "종교"·직업 "주부" 추가</td></tr></table></div>`;
+  renderKeyCards(N);
   // 상세 (접힘)
   const wait=act.filter(r=>!r.calls&&!r.next),actC=act.filter(r=>r.calls||r.next).sort((a,b)=>b.calls-a.calls||a.n-b.n);
   $('revMore').innerHTML=`<div class="grid2"><div><h3 style="margin-top:0">문제별 설명과 개선안</h3><div class="rv-list">${REV_ISSUES.map(x=>`<div class="rv-item"><b>${x.t}</b><span class="c">${x.ns.length}건</span><div class="d">${x.d} <span style="color:var(--muted)">${list(x.ns)}</span></div><div class="fx">→ ${x.fx}</div></div>`).join('')}</div>
