@@ -1501,6 +1501,7 @@ function renderReview(A){
   const VT={done:'방문 완료',noshow:'고객 부재',none:'방문 전 해지',unk:'미기재'};
   $('revRows').innerHTML=`<table><tr><th>번호</th><th>고객</th><th>전화번호</th><th>나이·성별</th><th>시도</th><th>방문일</th><th>방문</th><th>결과</th><th>전화케어</th><th>내용</th></tr>${REV.map(r=>`<tr><td class="n">#${r.n}</td><td class="n">${REV_ID[r.n]?.[0]||''}</td><td class="n">${REV_ID[r.n]?.[1]||''}</td><td class="n">${r.age}세 ${r.sex}</td><td class="n">${r.sido}</td><td class="n">${r.vd.replace('-','/')}</td><td class="n">${VT[r.visit]}</td><td class="n">${isCx(r)?cxTag(cxRev.get(r).c):r.cd?`<span class="tag ok">이용 중</span><div style="font-size:11.5px;color:var(--warn)">해지 의사 ${r.cd.replace('-','/')} · 반품 전</div>`:'<span class="tag ok">이용 중</span>'}</td><td class="n">${dots(r.calls)}</td><td>${esc(r.note)}</td></tr>`).join('')}${extra.map(l=>`<tr><td class="n">–</td><td class="n">${esc(l.nm)||'방문 '+(l.i+1)}</td><td class="n"></td><td class="n">${l.c.age??'?'}세</td><td class="n">${l.c.region||''}</td><td class="n">–</td><td class="n">–</td><td class="n">${cxTag(l.c)}</td><td class="n">–</td><td><span style="color:var(--text-2)">메터모스트에 기록 없음 — 신청자관리 반품으로 해지 반영 (사유 미기록)</span></td></tr>`).join('')}</table>`;
 }
+let logSort={k:'idx',asc:true},logLastA=null;
 function renderLog(A){
   if(!A.vRows.length){$('logTable').innerHTML='<p class="note">위에서 직접 입력하거나 대상자 엑셀을 업로드하면 건별 상태가 표시됩니다.</p>';return}
   const tag={ok:'<span class="tag ok">유지</span>',pre:'<span class="tag ng">배송전취소</span>',ng:'<span class="tag ng">취소</span>',wait:'<span class="tag wait">관찰 중</span>',miss:'<span class="tag miss">계약 미매칭</span>',pend:'<span class="tag wait">상태 확인 전</span>'};
@@ -1510,18 +1511,26 @@ function renderLog(A){
     :m.why==='dailyRet'?`일마감에 있음 · 일마감 시점에 이미 반품일 있음 → 최초계약에서 제외`
     :'톡이즈 일마감·월간누적 어디에도 이 키 없음 (키 오타·다른 브랜드·아직 계약 전)';
   // 결과 리뷰 번호: 마스킹 이름이 같은 현장 기록 행 (같은 마스킹 이름이 여럿이면 나이로 고름)
-  const revNo=(v,c)=>{const nm=maskName(v.name)||v.nm;if(!nm)return'–';let rs=REV.filter(r=>REV_ID[r.n]?.[0]===nm);
-    if(rs.length>1&&c?.age!=null){const a=rs.filter(r=>Math.abs(r.age-c.age)<=1);if(a.length)rs=a}
-    return rs.length?rs.map(r=>'#'+r.n).join(' / ')+(rs.length>1?' ?':''):'<span style="color:var(--muted)">기록 없음</span>'};
-  $('logTable').innerHTML=`<table><tr><th>번호</th><th>결과 리뷰</th><th>고객키</th><th>고객명</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${A.vRows.map(({v,c,st,miss},i)=>{
+  const revOf=(v,c)=>{const nm=maskName(v.name)||v.nm;if(!nm)return null;let rs=REV.filter(r=>REV_ID[r.n]?.[0]===nm);
+    if(rs.length>1&&c?.age!=null){const a=rs.filter(r=>Math.abs(r.age-c.age)<=1);if(a.length)rs=a}return rs};
+  const revHtml=rs=>!rs?'–':rs.length?rs.map(r=>'#'+r.n).join(' / ')+(rs.length>1?' ?':''):'<span style="color:var(--muted)">기록 없음</span>';
+  // 정렬: 번호·결과 리뷰 머리글 클릭 (같은 머리글 다시 누르면 내림차순). 리뷰 번호 없는 건은 맨 뒤
+  logLastA=A;
+  const items=A.vRows.map((x,i)=>({...x,i,rs:revOf(x.v,x.c)}));
+  const key=it=>logSort.k==='rev'?(it.rs&&it.rs.length?it.rs[0].n:Infinity):it.i;
+  items.sort((a,b)=>{const ka=key(a),kb=key(b);if(ka===kb)return a.i-b.i;if(ka===Infinity)return 1;if(kb===Infinity)return-1;return logSort.asc?ka-kb:kb-ka});
+  const sh=(k,t)=>`<th data-sort="${k}" style="cursor:pointer;user-select:none;white-space:nowrap" title="눌러서 정렬">${t} ${logSort.k===k?(logSort.asc?'▲':'▼'):'<span style="color:var(--muted)">↕</span>'}</th>`;
+  $('logTable').innerHTML=`<table><tr>${sh('idx','번호')}${sh('rev','결과 리뷰')}<th>고객키</th><th>고객명</th><th>방문일</th><th>설치담당</th><th>권역</th><th>연령</th><th>배송일</th><th>배송 후 경과</th><th>반품일</th><th>상태</th><th>와이파이</th><th>회원가입</th><th>이동(분)</th><th>설치(분)</th><th>비용</th><th style="text-align:left">비고</th><th></th></tr>${items.map(({v,c,st,miss,i,rs})=>{
     const el=c&&c.ship&&A.asOf?Math.round((A.asOf-toDate(c.ship))/DAY)+'일':'–';
     const mw=st==='pend'?`일마감 계약 확인(신청 ${c.apply?c.apply.slice(5):'?'}) · 월간누적이 ${mMax}까지라 배송·취소 미확인 → 취소율 계산 제외`:missWhy(miss);
-    return`<tr><td>${i+1}</td><td>${revNo(v,c)}</td><td>${mask(v.ck||v.ok)||esc(v.sid)}</td><td>${esc(v.name)||'–'}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}${c?.manPre?'<div style="font-size:11.5px;color:var(--text-2)">수기 처리</div>':''}${mw?`<div style="font-size:11.5px;color:var(--warn);white-space:normal;min-width:180px;text-align:left">${esc(mw)}</div>`:''}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td style="white-space:nowrap">${syncMode?'':`<button class="btn auth-only" data-edit="${esc(vKey(v))}" style="padding:2px 8px">수정</button> <button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
+    return`<tr><td>${i+1}</td><td>${revHtml(rs)}</td><td>${mask(v.ck||v.ok)||esc(v.sid)}</td><td>${esc(v.name)||'–'}</td><td>${v.date||'–'}</td><td>${esc(v.staff)||'–'}</td><td>${c?c.region:'–'}</td><td>${c&&c.age!=null?c.age+'세':'–'}</td><td>${c?.ship||'–'}</td><td>${el}</td><td>${c?.ret||''}</td><td>${tag[st]}${c?.manPre?'<div style="font-size:11.5px;color:var(--text-2)">수기 처리</div>':''}${mw?`<div style="font-size:11.5px;color:var(--warn);white-space:normal;min-width:180px;text-align:left">${esc(mw)}</div>`:''}</td><td>${v.wifi||'–'}</td><td>${v.signup||'–'}</td><td>${v.travel||'–'}</td><td>${v.install||'–'}</td><td>${v.cost?num(v.cost):'–'}</td><td style="text-align:left">${esc(v.memo)}</td><td style="white-space:nowrap">${syncMode?'':`<button class="btn auth-only" data-edit="${esc(vKey(v))}" style="padding:2px 8px">수정</button> <button class="btn auth-only" data-del="${esc(vKey(v))}" style="padding:2px 8px">삭제</button>`}</td></tr>`}).join('')}</table>
   ${syncMode?'<p class="note">동기화본 보기 — 고객키·주문키·고객명·비고·설치담당은 공개 동기화 파일에 넣지 않아 "방문 n"으로 표시됩니다. 수정은 원본 데이터가 있는 PC에서 하고 동기화하세요.</p>':''}
   <p class="note">배송전취소 = 일마감에는 있는데 월간누적에서 사라진 건 (최초계약 기준에서만 취소로 셈). "수기 처리" = 방문 당일 취소 등으로 [수정]에서 직접 배송전취소로 체크한 건. 계약 미매칭 = 방문 대상자의 주문키(우선) 또는 고객키가 톡이즈 계약 목록에 없는 건. 계약 목록은 일마감(최초계약) + 월간누적(배송·반품 상태)을 고객키로 합친 것이라, 일마감에 있는 계약이면 매칭됩니다. 상태 확인 전 = 일마감에서 계약은 확인됐지만 월간누적이 아직 그 신청일까지 없어 배송·취소 여부를 모르는 건 — 취소율 계산에서 빼 두었다가 월간누적(wm_dash 취소율 탭 또는 여기 업로드)이 올라오면 자동으로 판정됩니다.</p>`;
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-$('logTable').addEventListener('click',e=>{const d=e.target.dataset||{};if(d.del)removeVisit(d.del);else if(d.edit)openEdit(d.edit)});
+$('logTable').addEventListener('click',e=>{const th=e.target.closest('th[data-sort]');
+  if(th){const k=th.dataset.sort;logSort=logSort.k===k?{k,asc:!logSort.asc}:{k,asc:true};if(logLastA)renderLog(logLastA);return}
+  const d=e.target.dataset||{};if(d.del)removeVisit(d.del);else if(d.edit)openEdit(d.edit)});
 // 건별 수정 (비운 칸은 비운 대로 저장)
 let editKey='';
 const EF={eName:'name',eDate:'date',eStaff:'staff',eCost:'cost',eTravel:'travel',eInstall:'install',eWifi:'wifi',eSignup:'signup',eMemo:'memo'};
