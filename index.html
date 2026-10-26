@@ -815,6 +815,8 @@ applyAuth();
 const SYNC_REPO='wminfobin-byte/talkis_visit',SYNC_PATH='data.json',TOKEN_KEY='talkisVisit.ghToken';
 let syncMode=false,syncTs=0;   // syncMode=true: 동기화본을 보는 중 (이 PC에 원본 없음)
 const hasLocalSource=()=>src.some(s=>s.kind==='daily');
+// 고객명 가운데 마스킹 (김연옥 → 김*옥, 두 글자 → 김*). 동기화본에는 이 마스킹 이름만 넣는다(2026-10-26, 결과 리뷰 대조용)
+const maskName=s=>{s=String(s||'').trim();return!s?'':s.length<=2?s[0]+'*':s[0]+'*'.repeat(s.length-2)+s.at(-1)};
 function buildSyncPayload(){
   const idx=new Map(contracts.map((c,i)=>[c,i]));
   const byOk=new Map(contracts.map(c=>[c.ok,c])),byCk=new Map(contracts.filter(c=>c.ck).map(c=>[c.ck,c]));
@@ -823,7 +825,7 @@ function buildSyncPayload(){
   const vs=visits.map(v=>{const c=(v.ok&&byOk.get(v.ok))||(v.ck&&byCk.get(v.ck))||null;
     const p=c?null:(v.ok&&pending.get(v.ok))||(v.ck&&pending.get(v.ck))||null;
     const miss=c||p?null:(v.ok&&dropped.get(v.ok))||(v.ck&&dropped.get(v.ck))||{why:'none'};
-    return{ix:c?idx.get(c):null,pend:p?{apply:p.apply,age:p.age??null,region:p.region||''}:null,miss,date:v.date||'',travel:v.travel||0,install:v.install||0,cost:v.cost||0,wifi:v.wifi||'',signup:v.signup||'',manPre:!!v.manPre}});
+    return{ix:c?idx.get(c):null,nm:maskName(v.name),pend:p?{apply:p.apply,age:p.age??null,region:p.region||''}:null,miss,date:v.date||'',travel:v.travel||0,install:v.install||0,cost:v.cost||0,wifi:v.wifi||'',signup:v.signup||'',manPre:!!v.manPre}});
   return{v:1,ts:Date.now(),cinfo:{daily:cinfo.daily,month:cinfo.month,unknown:cinfo.unknown,dailyMod:cinfo.dailyMod||0,mMax:cinfo.mMax||''},rows,visits:vs};
 }
 function applySyncPayload(p){
@@ -1392,73 +1394,82 @@ let REV_GOOD=[
  ['종이 교재·발음 연습 호평',[17,23],'보카책·관심사책, AI 대화 발음 교정'],
  ['부부·가족이 함께 학습',[30],'가족이 같이 하면 계속할 가능성이 커짐'],
 ];
-// 위 취소(계약 데이터)로 잡힌 방문 대상자 vs 현장 기록 해지를 사람별로 짝지은 대조표.
-// 짝: 원본 PC는 고객명 마스킹(첫·끝 글자) 비교, 동기화본(이름 없음)은 나이(±1)·취소 종류로 추정.
-function cxCompare(A,X,isInit,cancel,pend,ok){
-  const isC=c=>isInit?(c.pre||!!c.ret):!!c.ret;
-  const L=X.V.filter(isC).map(c=>{const i=A.vRows.findIndex(x=>x.c===c),x=A.vRows[i];return{c,v:x?.v,i}});
-  const maskN=s=>{s=String(s||'').trim();return!s?'':s.length<=2?s[0]+'*':s[0]+'*'.repeat(s.length-2)+s.at(-1)};
-  const sameN=(a,b)=>a&&b&&a[0]===b[0]&&a.at(-1)===b.at(-1)&&a.length===b.length;
-  const R=[...cancel,...pend],used=new Set(),pairs=[];
-  for(const l of L){
-    const nm=maskN(l.v?.name),kind=l.c.pre?'pre':'ret';
-    let r=nm&&R.find(r=>!used.has(r)&&sameN(nm,REV_ID[r.n]?.[0])),how='이름';
-    if(!r){r=R.filter(r=>!used.has(r)&&r.cd&&Math.abs(r.age-(l.c.age??-9))<=1&&(kind==='pre')===(r.ab==='pre'))
-      .sort((a,b)=>Math.abs(a.age-l.c.age)-Math.abs(b.age-l.c.age))[0];how='나이·종류 추정'}
-    if(r)used.add(r);pairs.push({l,r,how,nm});
-  }
-  for(const r of R)if(!used.has(r)&&r.ab!=='pend')pairs.push({l:null,r});
-  for(const r of R)if(!used.has(r)&&r.ab==='pend')pairs.push({l:null,r});
-  const d=s=>s?s.slice(5).replace('-','/'):'–';
-  const lc=p=>{if(!p.l)return'<span style="color:var(--muted)">– (위 취소에 없음)</span>';const c=p.l.c;
-    return`${p.nm||'방문 '+(p.l.i+1)} <span style="color:var(--text-2)">${c.age??'?'}세 · 신청 ${d(c.apply)}</span><br>${c.pre?`<span class="tag ng">배송전취소${c.manPre?' · 수기':''}</span>`:`<span class="tag ng">반품 ${d(c.ret)}</span>`}`};
-  const rc=p=>{const r=p.r;if(!r)return'<span class="neg"><b>현장 기록에 해지 없음</b></span>';
-    return`#${r.n} ${revWho(r.n)} <span style="color:var(--text-2)">${r.age}세 · ${esc(r.rc||'')}</span><br>${r.ab==='pend'?'<span class="tag wait">해지 의사 · 반품 전</span>':r.ab==='pre'?'<span class="tag ng">배송전취소</span>':'<span class="tag ng">해지</span>'} <span style="color:var(--text-2)">의사 ${d('0000-'+r.cd)}</span>`};
-  const judge=p=>!p.l?(p.r.ab==='pend'?'<span style="color:var(--text-2)">반품일 대기 — 정상</span>':'<span class="neg">위 취소에 없음 — 대상자 매칭 확인</span>')
-    :!p.r?'<span class="neg">새 반품? 현장 기록 확인 필요</span>'
-    :p.r.ab==='pend'?'<span class="neg">반품일 찍힘 → 해지로 바꿔야 함</span>'
-    :`<span style="color:var(--good)">일치</span>${p.how!=='이름'?' <span style="color:var(--muted)">(추정)</span>':''}`;
-  return`<details${ok?'':' open'} style="margin-top:2px"><summary style="cursor:pointer">사람별 대조표 — 위 취소 ${L.length}건 vs 현장 기록 해지 ${cancel.length}건${pend.length?` + 해지 의사 ${pend.length}건`:''}</summary>
-    <div class="tw" style="margin-top:8px"><table class="rv-fix"><tr><th style="text-align:left">위 취소 (신청자관리 · 수기 배송전취소)</th><th style="text-align:left">현장 기록 (메터모스트)</th><th style="text-align:left">판정</th></tr>
-    ${pairs.map(p=>`<tr><td>${lc(p)}</td><td>${rc(p)}</td><td>${judge(p)}</td></tr>`).join('')}</table></div>
-    <p class="note" style="margin:6px 0 0">짝 맞추기: ${syncMode?'동기화본에는 고객명이 없어 나이·취소 종류로 추정합니다. 정확한 대조는 원본 PC에서 보세요.':'② 방문 대상자의 고객명(마스킹 비교)으로 맞추고, 이름이 없으면 나이·취소 종류로 추정합니다.'}</p></details>`;
+// ── 해지 = 신청자관리 반품일 + 수기 배송전취소만 (2026-10-26 사용자 결정) ──
+// 메터모스트는 방문 후 들어온 해지 요청을 따로 올리지 않으므로, 해지 목록은 계약 데이터(위 취소)에서 만들고
+// 현장 기록(REV)은 사람이 맞으면 사유·메모를 붙이는 용도로만 쓴다.
+// 짝: 고객명 마스킹(원본 PC는 ② 고객명, 동기화본은 동기화 시 넣은 마스킹 이름 nm)이 같으면 같은 사람.
+// 이름이 없는 옛 동기화본만 나이·취소 종류로 추정한다.
+const DUEUM={'렬':'열','률':'율','력':'역','련':'연','례':'예','료':'요','류':'유','리':'이','림':'임','라':'나','락':'낙','란':'난','람':'남','랑':'낭','래':'내','로':'노','록':'녹','론':'논','롱':'농','뢰':'뇌','룡':'용','량':'양','려':'여','령':'영'};
+const normN=s=>[...String(s||'')].map(ch=>DUEUM[ch]||ch).join('');
+function cmsCx(A){
+  const M=A.M.init.avail?A.M.init:A.M.post;
+  const L=M.V.filter(c=>c.pre||!!c.ret).map(c=>{const i=A.vRows.findIndex(x=>x.c===c),v=A.vRows[i]?.v;return{c,v,i,nm:maskName(v?.name)||v?.nm||'',r:null,how:''}});
+  const used=new Map();
+  for(const l of L){if(!l.nm)continue;const r=REV.find(r=>!used.has(r)&&REV_ID[r.n]?.[0]===l.nm);if(r){used.set(r,l);l.r=r;l.how='이름'}}
+  for(const l of L){if(l.r||l.nm)continue;
+    const r=REV.filter(r=>!used.has(r)&&r.cd&&Math.abs(r.age-(l.c.age??-9))<=1&&(!!l.c.pre)===(r.ab==='pre')).sort((a,b)=>Math.abs(a.age-l.c.age)-Math.abs(b.age-l.c.age))[0];
+    if(r){used.set(r,l);l.r=r;l.how='추정'}}
+  // 같은 사람일 수도 있는 비슷한 이름(첫 글자 차이·두음법칙) — 짝은 짓지 않고 확인만 요청
+  for(const l of L){if(l.r||!l.nm)continue;const t=normN(l.nm);
+    l.similar=REV.find(r=>!used.has(r)&&REV_ID[r.n]&&REV_ID[r.n][0].length===l.nm.length&&normN(REV_ID[r.n][0]).at(-1)===t.at(-1)&&(l.c.age==null||Math.abs(r.age-l.c.age)<=1))||null}
+  return{L,used};
+}
+const dMD=s=>s?s.slice(5).replace('-','/'):'–';
+const cxTag=c=>c.pre?`<span class="tag ng">배송전취소${c.manPre?' · 수기':''}</span>`:`<span class="tag ng">반품 ${dMD(c.ret)}</span>`;
+const cxWho=l=>l.r?`#${l.r.n} ${revWho(l.r.n)}`:`${esc(l.nm)||'방문 '+(l.i+1)} <span style="color:var(--muted)">(현장 기록 없음)</span>`;
+// 대조표: 위 취소(기준) ↔ 현장 기록
+function cxCompare(K,pend){
+  const rows=K.L.map(l=>{const c=l.c,r=l.r;
+    const left=`${esc(l.nm)||'방문 '+(l.i+1)} <span style="color:var(--text-2)">${c.age??'?'}세 · 신청 ${dMD(c.apply)}</span><br>${cxTag(c)}`;
+    const right=r?`#${r.n} ${revWho(r.n)} <span style="color:var(--text-2)">${r.age}세</span><br>${r.cd?`해지 의사 ${dMD('0000-'+r.cd)} · ${esc(r.rc||'')}`:'<span style="color:var(--text-2)">해지 언급 없음</span>'}`
+      :'<span style="color:var(--muted)">기록 없음</span>';
+    const judge=r?(r.cd?`<span style="color:var(--good)">일치</span>`:'<span style="color:var(--good)">해지로 반영</span> <span style="color:var(--text-2)">— 메터모스트엔 해지 언급 없음 (사유 미기록)</span>')+(l.how==='추정'?' <span style="color:var(--muted)">(추정)</span>':'')
+      :`<span style="color:var(--good)">해지로 반영</span> <span style="color:var(--text-2)">— 메터모스트에 기록 없음 (사유 미기록)</span>${l.similar?`<br><span class="neg">현장 기록 #${l.similar.n} ${revWho(l.similar.n)}(${l.similar.age}세)와 같은 사람인지 확인</span>`:''}`;
+    return`<tr><td>${left}</td><td>${right}</td><td>${judge}</td></tr>`});
+  for(const r of pend)rows.push(`<tr><td><span style="color:var(--muted)">– 반품일 없음</span></td><td>#${r.n} ${revWho(r.n)} <span style="color:var(--text-2)">${r.age}세</span><br>해지 의사 ${dMD('0000-'+r.cd)} · ${esc(r.rc||'')}</td><td><span style="color:var(--text-2)">이용 중 (해지 의사 · 반품 전)</span></td></tr>`);
+  const attn=K.L.some(l=>!l.r||l.similar);
+  return`<details${attn?' open':''} style="margin-top:2px"><summary style="cursor:pointer">사람별 대조표 — 위 취소 ${K.L.length}건 ↔ 현장 기록</summary>
+    <div class="tw" style="margin-top:8px"><table class="rv-fix"><tr><th style="text-align:left">위 취소 (신청자관리 반품일 · 수기 배송전취소) — 기준</th><th style="text-align:left">현장 기록 (메터모스트)</th><th style="text-align:left">결과</th></tr>${rows.join('')}</table></div>
+    <p class="note" style="margin:6px 0 0">해지 여부는 왼쪽(신청자관리)만 따릅니다. 오른쪽은 사유를 붙이는 용도입니다. 짝은 고객명 마스킹이 같을 때만 맺고${K.L.some(l=>l.how==='추정')?', 이름이 없는 동기화본은 나이·취소 종류로 추정합니다(원본 PC에서 [동기화]하면 이름으로 맞춰짐)':''}.</p></details>`;
 }
 function renderReview(A){
-  // 해지 판정은 신청자관리 반품일 + 수기 배송전취소만 따른다(2026-10-26 사용자 결정).
-  // 현장에서 해지 의사만 밝히고 반품일이 없는 건(ab:'pend')은 해지가 아니라 "이용 중 · 해지 의사"로 둔다.
-  const isCx=r=>!!r.cd&&r.ab!=='pend';
-  const N=REV.length,cancel=REV.filter(isCx),pend=REV.filter(r=>r.cd&&r.ab==='pend'),use=N-cancel.length;
+  // 해지 목록 = 계약 데이터(신청자관리 반품일 + 수기 배송전취소). 계약 데이터가 없을 때만 현장 기록(cd, pend 제외)으로 대신함
+  const K=A.vRows.length?cmsCx(A):null;
+  const CX=K?K.L:REV.filter(r=>r.cd&&r.ab!=='pend').map(r=>({c:{pre:r.ab==='pre',ret:r.ab==='pre'?'':'2026-'+r.cd,age:r.age},r,nm:'',i:-1,how:'기록'}));
+  const cxRev=new Map(CX.filter(l=>l.r).map(l=>[l.r,l]));
+  const isCx=r=>cxRev.has(r);
+  const extra=CX.filter(l=>!l.r);                       // 해지됐지만 현장 기록에 없는 사람
+  const pend=REV.filter(r=>r.cd&&!isCx(r));             // 해지 의사만 밝히고 반품일 없음 → 이용 중
+  const N=REV.length+extra.length,use=N-CX.length;
   const visited=REV.filter(r=>r.visit==='done').length,a75=REV.filter(r=>r.age>=75).length;
   const called=REV.filter(r=>!isCx(r)&&r.calls>0).length,callTot=REV.reduce((s,r)=>s+r.calls,0);
-  const avgAge=REV.reduce((s,r)=>s+r.age,0)/N,list=ns=>ns.map(n=>'#'+n).join(' ');
+  const avgAge=REV.reduce((s,r)=>s+r.age,0)/REV.length,list=ns=>ns.map(n=>'#'+n).join(' ');
   const dots=c=>`<span class="calls">${'●'.repeat(c)}<s>${'●'.repeat(Math.max(0,4-c))}</s></span>`;
-  // ① 탭과 건수 맞추기: 배송후 기준에서는 배송전취소(pre)가 빠짐
   const X=A.vRows.length?curMetric(A):null,isInit=X?.key==='init';
-  const expA=cancel.filter(r=>isInit||r.ab!=='pre').length;
-  const pendTxt=pend.length?`해지 의사만 밝힌 <b>${pend.length}건</b>(${pend.map(r=>'#'+r.n+' '+revWho(r.n)).join(', ')})은 신청자관리 반품일이 없어 <b>이용 중</b>으로 봄 — 반품일이 찍히면 해지로 반영`:'';
+  const nPre=CX.filter(l=>l.c.pre).length;
   let lines=[];
-  if(X&&X.vN){
-    const ok=X.vR===expA;
-    lines.push(`해지 <b>${expA}건</b> = 위 취소 <b>${X.vR}건</b>${ok?' (건별 일치)':` <span class="neg">— 불일치: 신청자관리에 새 반품이 잡혔으면 해당 고객의 "해지 의사" 표시를 해지로 바꿔야 함</span>`}${!isInit&&cancel.some(r=>r.ab==='pre')?` · 배송전취소 ${cancel.filter(r=>r.ab==='pre').length}건은 배송후 기준에서 제외`:''}`);
-    if(pendTxt)lines.push(pendTxt);
-    lines.push(cxCompare(A,X,isInit,cancel,pend,ok));
-    if(visits.length!==N)lines.push(`방문 대상자: 취소율 계산 ${visits.length}건 vs 현장 기록 ${N}건 — ${Math.abs(visits.length-N)}건 차이, ② 탭과 기록 대조 필요`);
-  }else{lines.push(`해지 ${cancel.length}건 (계약 데이터가 들어오면 위 취소 건수와 대조)`);if(pendTxt)lines.push(pendTxt)}
+  if(K&&X){
+    lines.push(`해지 <b>${CX.length}건</b> — 신청자관리 반품일 ${CX.length-nPre}건 + 수기 배송전취소 ${nPre}건 (위 취소${isInit?'와 같음':`는 배송후 기준이라 배송전취소 제외 ${X.vR}건`})${extra.length?` · 이 중 <b>${extra.length}건</b>은 메터모스트에 기록 없음 (${extra.map(l=>esc(l.nm)||'방문 '+(l.i+1)).join(', ')} — 사유 미기록)`:''}`);
+    if(pend.length)lines.push(`해지 의사만 밝힌 ${pend.length}건(${pend.map(r=>'#'+r.n+' '+revWho(r.n)).join(', ')})은 신청자관리 반품일이 없어 <b>이용 중</b> — 반품일이 찍히면 자동으로 해지에 들어감`);
+    lines.push(cxCompare(K,pend));
+    if(visits.length!==N)lines.push(`방문 대상자: 취소율 계산 ${visits.length}건 vs 결과 리뷰 ${N}건 — ${Math.abs(visits.length-N)}건 차이, ② 탭과 메터모스트 기록 대조 필요`);
+  }else{lines.push(`해지 ${CX.length}건 (현장 기록 기준 — 계약 데이터가 들어오면 신청자관리 반품일로 다시 셈)`)}
   lines.push(`최종 확정은 마지막 방문(10/23) 고객의 청약철회 기간이 끝나는 <b>11/6 이후</b> · 현장 기록 기준 ${REV_ASOF}`);
   $('revHead').innerHTML=`<div class="card" style="padding:14px 22px"><ul style="margin:0;padding-left:18px;font-size:13px">${lines.map(l=>`<li>${l}</li>`).join('')}</ul></div>`;
-  $('revKpis').innerHTML=kpi('방문 대상',`${N}건`,`평균 ${avgAge.toFixed(0)}세 · 75세 이상 ${a75}건`)
+  $('revKpis').innerHTML=kpi('방문 대상',`${N}건`,`평균 ${avgAge.toFixed(0)}세 · 75세 이상 ${a75}건${extra.length?` · 기록 없는 ${extra.length}명 포함`:''}`)
     +kpi('방문 완료',`${visited}건`,[['noshow','부재'],['none','방문 전 해지'],['unk','미기재']].map(([k,t])=>[t,REV.filter(r=>r.visit===k).length]).filter(x=>x[1]).map(x=>x.join(' ')).join(' · ')||'전원 방문')
-    +kpi('해지',`${cancel.length}건`,`반품 ${cancel.filter(r=>r.ab!=='pre').length} · 배송전취소 ${cancel.filter(r=>r.ab==='pre').length} (신청자관리 기준)`)
+    +kpi('해지',`${CX.length}건`,`반품 ${CX.length-nPre} · 배송전취소 ${nPre} (신청자관리 기준)`)
     +kpi('이용 중',`${use}건`,pend.length?`해지 의사 표명 ${pend.length}명 포함 (반품 전)`:'신청자관리 반품 없음')
-    +kpi('전화케어',`${callTot}회`,`이용 고객 ${use}명 중 ${called}명 진행`);
-  // 취소 사유: 판매 단계에서 걸러야 할 건 vs 방문·제품으로 줄일 수 있는 건
-  const SALES=REV_SALES;
-  const tag=r=>r.ab==='pend'?'<span class="tag wait">해지 의사 · 반품 전</span>':r.ab==='pre'?'<span class="tag ng">배송전취소</span>':'<span class="tag ng">반품</span>';
-  const grp=(t,rs)=>rs.length?`<div class="rv-grp"><div class="h"><span>${t}</span><span>${rs.length}건</span></div>${rs.map(r=>`<div class="rv-row"><span>#${r.n} ${revWho(r.n)} <span class="w">${r.age}세 · ${esc(r.rc)}</span></span>${tag(r)}</div>`).join('')}</div>`:'';
-  $('revCancel').innerHTML=grp('판매 단계에서 걸러야 할 건',cancel.filter(r=>SALES.includes(r.rc)))
-    +grp('방문 방식·제품으로 줄일 수 있는 건',cancel.filter(r=>!SALES.includes(r.rc)))
-    +grp('참고 — 해지 의사만 밝힘 (반품일 없음 · 해지로 안 셈)',pend)
-    +`<p class="note">해지 = 신청자관리 반품일 또는 수기 배송전취소. 설치(와이파이·가입) 실패로 해지된 건은 없습니다.</p>`;
+    +kpi('전화케어',`${callTot}회`,`이용 고객 중 ${called}명 진행`);
+  // 취소 사유: 판매 단계에서 걸러야 할 건 / 방문·제품으로 줄일 수 있는 건 / 사유 미기록
+  const SALES=REV_SALES,rcOf=l=>l.r?.rc||'';
+  const row=l=>`<div class="rv-row"><span>${cxWho(l)} <span class="w">${l.c.age??l.r?.age??'?'}세 · ${esc(rcOf(l))||'사유 미기록'}</span></span>${cxTag(l.c)}</div>`;
+  const grp=(t,ls)=>ls.length?`<div class="rv-grp"><div class="h"><span>${t}</span><span>${ls.length}건</span></div>${ls.map(row).join('')}</div>`:'';
+  $('revCancel').innerHTML=grp('판매 단계에서 걸러야 할 건',CX.filter(l=>SALES.includes(rcOf(l))))
+    +grp('방문 방식·제품으로 줄일 수 있는 건',CX.filter(l=>rcOf(l)&&!SALES.includes(rcOf(l))))
+    +grp('사유 미기록 (메터모스트에 해지 언급 없음)',CX.filter(l=>!rcOf(l)))
+    +(pend.length?`<div class="rv-grp"><div class="h"><span>참고 — 해지 의사만 밝힘 (반품일 없음 · 해지로 안 셈)</span><span>${pend.length}건</span></div>${pend.map(r=>`<div class="rv-row"><span>#${r.n} ${revWho(r.n)} <span class="w">${r.age}세 · ${esc(r.rc)}</span></span><span class="tag wait">해지 의사 · 반품 전</span></div>`).join('')}</div>`:'')
+    +`<p class="note">해지 = 신청자관리 반품일 또는 수기 배송전취소. 사유는 메터모스트 기록에서 가져옵니다. 설치(와이파이·가입) 실패로 해지된 건은 없습니다.</p>`;
   const max=Math.max(...REV_ISSUES.map(x=>x.ns.length));
   $('revIssues').innerHTML=REV_ISSUES.map(x=>`<div class="rv-mini"><span>${x.t}</span><span class="c">${x.ns.length}</span><div class="rv-bar"><i style="width:${x.ns.length/max*100}%"></i></div></div>`).join('')
     +`<p class="note">좋았던 점: 방문 자체 만족 ${REV_GOOD[0][1].length} · 재방문 희망 ${REV_GOOD[1][1].length} · 목표를 같이 잡아 주니 동기 부여 ${REV_GOOD[2][1].length}</p>`;
@@ -1488,7 +1499,7 @@ function renderReview(A){
     <div><h3 style="margin-top:0">전화케어 고객별</h3><div class="tw"><table><tr><th>고객</th><th>방문일</th><th>완료</th><th>다음 예정</th></tr>${actC.map(r=>`<tr><td>#${r.n} ${revWho(r.n)} <span style="color:var(--text-2)">${r.age}세</span></td><td>${r.vd.replace('-','/')}</td><td>${dots(r.calls)}</td><td>${r.next?r.next.replace('-','/'):'–'}</td></tr>`).join('')}</table></div>
     <p class="note">1차 통화·예약 전: ${list(wait.map(r=>r.n))}</p></div></div>`;
   const VT={done:'방문 완료',noshow:'고객 부재',none:'방문 전 해지',unk:'미기재'};
-  $('revRows').innerHTML=`<table><tr><th>번호</th><th>고객</th><th>전화번호</th><th>나이·성별</th><th>시도</th><th>방문일</th><th>방문</th><th>결과</th><th>전화케어</th><th>내용</th></tr>${REV.map(r=>`<tr><td class="n">#${r.n}</td><td class="n">${REV_ID[r.n]?.[0]||''}</td><td class="n">${REV_ID[r.n]?.[1]||''}</td><td class="n">${r.age}세 ${r.sex}</td><td class="n">${r.sido}</td><td class="n">${r.vd.replace('-','/')}</td><td class="n">${VT[r.visit]}</td><td class="n">${isCx(r)?`<span class="tag ng">${r.ab==='pre'?'배송전취소':'해지'} ${r.cd.replace('-','/')}</span>`:r.cd?`<span class="tag ok">이용 중</span><div style="font-size:11.5px;color:var(--warn)">해지 의사 ${r.cd.replace('-','/')} · 반품 전</div>`:'<span class="tag ok">이용 중</span>'}</td><td class="n">${dots(r.calls)}</td><td>${esc(r.note)}</td></tr>`).join('')}</table>`;
+  $('revRows').innerHTML=`<table><tr><th>번호</th><th>고객</th><th>전화번호</th><th>나이·성별</th><th>시도</th><th>방문일</th><th>방문</th><th>결과</th><th>전화케어</th><th>내용</th></tr>${REV.map(r=>`<tr><td class="n">#${r.n}</td><td class="n">${REV_ID[r.n]?.[0]||''}</td><td class="n">${REV_ID[r.n]?.[1]||''}</td><td class="n">${r.age}세 ${r.sex}</td><td class="n">${r.sido}</td><td class="n">${r.vd.replace('-','/')}</td><td class="n">${VT[r.visit]}</td><td class="n">${isCx(r)?cxTag(cxRev.get(r).c):r.cd?`<span class="tag ok">이용 중</span><div style="font-size:11.5px;color:var(--warn)">해지 의사 ${r.cd.replace('-','/')} · 반품 전</div>`:'<span class="tag ok">이용 중</span>'}</td><td class="n">${dots(r.calls)}</td><td>${esc(r.note)}</td></tr>`).join('')}${extra.map(l=>`<tr><td class="n">–</td><td class="n">${esc(l.nm)||'방문 '+(l.i+1)}</td><td class="n"></td><td class="n">${l.c.age??'?'}세</td><td class="n">${l.c.region||''}</td><td class="n">–</td><td class="n">–</td><td class="n">${cxTag(l.c)}</td><td class="n">–</td><td><span style="color:var(--text-2)">메터모스트에 기록 없음 — 신청자관리 반품으로 해지 반영 (사유 미기록)</span></td></tr>`).join('')}</table>`;
 }
 function renderLog(A){
   if(!A.vRows.length){$('logTable').innerHTML='<p class="note">위에서 직접 입력하거나 대상자 엑셀을 업로드하면 건별 상태가 표시됩니다.</p>';return}
