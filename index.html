@@ -233,21 +233,15 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
   <!-- 결과 리뷰 (방문·전화케어 현장 기록) -->
   <div class="kpis" id="revKpis"></div>
-  <div class="grid3">
-    <div class="card"><h2>취소 사유 — 누가 막을 수 있었나</h2><div id="revCancel"></div></div>
-    <div class="card"><h2>현장에서 반복된 문제</h2><div id="revIssues"></div></div>
-    <div class="card"><h2>전화케어 진행</h2><div id="revCall"></div></div>
-  </div>
-  <div class="grid2">
-    <div class="card guide"><h2>임플리케이션</h2><div id="revImpl"></div></div>
-    <div class="card guide"><h2>개선 의견</h2><div id="revFix"></div></div>
-  </div>
-  <div class="grid2">
-    <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
-      <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
-    <div class="card"><h2 id="daysTitle">기간별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
-      <div class="tw" id="daysTable" style="margin-top:12px"></div></div>
-  </div>
+  <div class="card"><h2>취소 사유 — 누가 막을 수 있었나</h2><div id="revCancel"></div></div>
+  <div class="card"><h2>현장에서 반복된 문제</h2><div id="revIssues"></div></div>
+  <div class="card"><h2>전화케어 진행</h2><div id="revCall"></div></div>
+  <div class="card guide"><h2>임플리케이션</h2><div id="revImpl"></div></div>
+  <div class="card guide"><h2>개선 의견</h2><div id="revFix"></div></div>
+  <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
+    <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
+  <div class="card"><h2 id="daysTitle">기간별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
+    <div class="tw" id="daysTable" style="margin-top:12px"></div></div>
   <details class="card fold"><summary>판정 기준 · 신뢰도<span class="fold-hint">펼치기</span></summary><div id="sigExplain" style="margin-top:14px"></div></details>
   <details class="card fold"><summary>상세 — 문제별 설명 · 좋았던 점 · 전화케어 고객별<span class="fold-hint">펼치기</span></summary><div id="revMore" style="margin-top:14px"></div></details>
   <details class="card fold"><summary>방문·전화케어 건별 기록<span class="fold-hint">펼치기</span></summary><div class="tw" id="revRows" style="margin-top:14px"></div></details>
