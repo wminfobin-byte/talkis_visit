@@ -815,7 +815,7 @@ applyAuth();
 const SYNC_REPO='wminfobin-byte/talkis_visit',SYNC_PATH='data.json',TOKEN_KEY='talkisVisit.ghToken';
 let syncMode=false,syncTs=0;   // syncMode=true: 동기화본을 보는 중 (이 PC에 원본 없음)
 const hasLocalSource=()=>src.some(s=>s.kind==='daily');
-// 고객명 가운데 마스킹 (김연옥 → 김*옥, 두 글자 → 김*). 동기화본에는 이 마스킹 이름만 넣는다(2026-10-26, 결과 리뷰 대조용)
+// 고객명 가운데 마스킹 (홍길동 → 홍*동, 두 글자 → 홍*). 동기화본에는 이 마스킹 이름만 넣는다(2026-10-26, 결과 리뷰 대조용)
 const maskName=s=>{s=String(s||'').trim();return!s?'':s.length<=2?s[0]+'*':s[0]+'*'.repeat(s.length-2)+s.at(-1)};
 function buildSyncPayload(){
   const idx=new Map(contracts.map((c,i)=>[c,i]));
