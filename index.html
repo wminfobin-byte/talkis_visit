@@ -189,13 +189,21 @@ body:not(.authed) .auth-only{display:none!important}
 .card.key{position:relative;overflow:hidden;padding-top:24px;word-break:keep-all}
 .card.key::before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
 .card.key h2{font-size:19px;margin-bottom:6px}
-.app-note{margin:10px 4px 0;font-size:12.5px;color:var(--text-2);word-break:keep-all}
-.app-req h2{font-size:15px}
-.app-l{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;font-size:13.5px;word-break:keep-all}
-.app-l li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--border)}
-.app-l li.top span{font-weight:700}.app-l li.top span{color:var(--text)}
-@media(max-width:640px){.app-l{grid-template-columns:1fr}}
-.app-l em{font-style:normal;color:var(--text-2);font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ap-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:4px 0 20px}
+.ap-t{background:var(--surface);border-radius:14px;padding:16px;box-shadow:var(--shadow);border-top:4px solid var(--accent);word-break:keep-all}
+.ap-h{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px}
+.ap-n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.ap-pri{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 8px;border-radius:99px}
+.ap-c{margin-left:auto;font-size:24px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}.ap-c small{font-size:12px;margin-left:1px}
+.ap-tt{font-size:16px;font-weight:800;line-height:1.35}
+.ap-s{font-size:12.5px;color:var(--accent);font-weight:600;margin-top:2px}
+.ap-d{font-size:12.5px;color:var(--text-2);margin-top:8px;line-height:1.5;text-wrap:pretty}
+.ap-more-h{font-size:12.5px;font-weight:800;color:var(--text-2);margin-bottom:6px}
+.ap-more{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 28px}
+.ap-m{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 0;font-size:13.5px;word-break:keep-all}
+.ap-m small{display:block;font-size:12px;color:var(--text-2)}.ap-m b{font-size:13px;color:var(--accent);font-variant-numeric:tabular-nums}
+@media(max-width:760px){.ap-top,.ap-more{grid-template-columns:1fr}}
+main{word-break:keep-all;overflow-wrap:break-word}
 .chap{display:flex;align-items:baseline;gap:10px;margin:30px 2px 10px;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--muted) 35%,transparent);word-break:keep-all}
 .chap b{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.5px;white-space:nowrap}
 .chap span{font-size:17px;font-weight:800;color:var(--text)}
@@ -261,7 +269,7 @@ body:not(.authed) .auth-only{display:none!important}
 .fxs-s{font-size:17px;font-weight:800;color:var(--tc);line-height:1.2;margin-top:6px}
 .fxs-why{font-size:12px;color:var(--text-2);margin-top:6px;line-height:1.5}
 .fxs ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
-.fxs li{position:relative;padding:9px 12px 9px 34px;border-radius:10px;background:var(--tbg);font-size:13px;line-height:1.5;text-wrap:balance}
+.fxs li{position:relative;padding:9px 12px 9px 34px;border-radius:10px;background:var(--tbg);font-size:13px;line-height:1.5;text-wrap:balance;word-break:keep-all}
 .fxs-why span{display:block}
 .fxs li small{display:block;font-size:12px;color:var(--text-2)}   /* 괄호 보충 설명은 다음 줄 (2026-10-27 줄바꿈 정리) */
 .fxs li::before{content:'✓';position:absolute;left:12px;top:9px;font-weight:800;color:var(--tc)}
@@ -318,7 +326,7 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="chap" style="margin-top:14px"><b>1 결과</b><span>택배 vs 방문케어 취소율 비교</span><em>같은 연령 구성의 택배 고객 기준</em></div>
   <div id="verdict"></div>
   <div class="card hero-card" id="hero"></div>
-  <!-- 발표 순서 (2026-10-27): 개요(KPI) → 결과(+취소 사유) → 핵심 세 가지 → 다음 단계 → 현장 기록 → 부록 -->
+  <!-- 발표 순서 (2026-10-27): 개요 → 1 결과(+취소 사유) → 2 핵심 → 3 운영 체크리스트 → 4 앱 개선 요청 → 5 다음 단계 → 6 현장 기록 → 부록 -->
   <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
   <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
     <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
@@ -327,13 +335,15 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="card"><h2>취소 사유</h2><div id="revCancel"></div></div>
   <div class="chap"><b>2 핵심</b><span>정규 운영을 위한 세 가지</span><em>고객 경험 · 케어 퀄리티 · 케어 최적화</em></div>
   <div class="card key"><div class="key-eye">핵심</div><h2>세 가지가 갖춰져야 정규 운영할 수 있음</h2><div id="revCore"></div></div>
-  <div class="card app-req"><h2>앱 개선 요청 사항 정리</h2><div id="revApp"></div></div>
-  <div class="chap"><b>3 다음 단계</b><span>앱 개선 후 2차 테스트</span></div>
+  <div class="chap"><b>3 운영 체크리스트</b><span>방문 전 · 중 · 후 표준 절차</span><em>정규 운영 시 표준 매뉴얼 초안</em></div>
+  <div class="card"><h2>단계별 체크리스트</h2><div id="revFix"></div></div>
+  <div class="chap"><b>4 앱 개선 요청</b><span>현장에서 나온 앱 개선 요청</span><em>12월 앱 개선 계획 참고</em></div>
+  <div class="card key appreq"><div class="key-eye">앱 개선</div><h2>앱 개선 요청 사항</h2><div id="revApp"></div></div>
+  <div class="chap"><b>5 다음 단계</b><span>앱 개선 후 2차 테스트</span></div>
   <div class="card key next"><div class="key-eye">다음 단계</div><div id="revNext"></div></div>
-  <div class="chap"><b>4 현장 기록</b><span>고객 반응 및 운영 이슈</span><em>현장 공통 사항 · 전화케어 · 운영 체크리스트</em></div>
+  <div class="chap"><b>6 현장 기록</b><span>고객 반응 및 운영 이슈</span><em>현장 공통 사항 · 전화케어</em></div>
   <div class="card"><h2>현장 공통 사항</h2><div id="revIssues"></div></div>
   <div class="card"><h2>전화케어 진행</h2><div id="revCall"></div></div>
-  <div class="card"><h2>단계별 체크리스트</h2><div id="revFix"></div></div>
   <div class="chap sub"><b>부록</b><span>데이터 기준 · 판정 근거 · 건별 기록</span></div>
   <div id="revHead"></div>
   <details class="card fold"><summary>판정 기준 · 신뢰도<span class="fold-hint">펼치기</span></summary><div id="sigExplain" style="margin-top:14px"></div></details>
@@ -1472,7 +1482,7 @@ const DEF_IMPL=[
 const DEF_NEXT={"t":"앱 개선 후 2차 방문케어 테스트","d":"12월 앱 개선 이후 신규 계약 고객 대상 2차 방문케어 테스트 진행","chk":["앱 관련 리스크를 줄인 상태에서 방문케어에 대한 고객 경험 만족도","1차 테스트 대비 현장 이슈(앱 사용 관련) 변화","택배 고객 대비 취소율 (1차와 같은 기준)"]};
 const DEF_FIX=[
  {"s":"방문 전","why":"와이파이·인터넷 연결 7건 · 방문 일정·출입 문제 7건","items":["설치가 어려운 고객은 방문 우선 배정 (인터넷 없음 등)","해피콜 때 인터넷·와이파이 유무 확인","기기를 퀵으로 받는 경우 방문 시간 전에 도착하도록 일정 관리","방문케어 예약 때 담당 코디가 \"본사 직원이 방문한다\"고 미리 안내","고객 자택별 출입 방법·주차 등록 등 방문 관련 사항 미리 확인","메모지·펜·커터칼 지참"]},
- {"s":"방문 중","why":"처음영어가 맞음 6건 · 방문 1건 평균 64분 · 계약 내용 재문의 4건","items":["최소 60분 확보","처음영어·보카부터 시작해 목표·주간 학습량 설정","아이디·비밀번호 규칙 통일","레벨테스트 건너뛰고 자기소개부터","화면 꺼짐 시간 연장","계약 관련 문의는 고객센터로 안내","일본어로 나간 기기는 영어 이용권 번호 수기 등록 (0과 O 주의)"]},
+ {"s":"방문 중","why":"처음영어가 맞음 6건 · 방문 1건 평균 64분 · 계약 내용 재문의 4건","items":["최소 60분 확보","처음영어·보카부터 시작해 목표·주간 학습량 설정","아이디·비밀번호 규칙 통일","레벨테스트 건너뛰고 자기소개부터","화면 꺼짐 시간 연장","계약 관련 문의는 고객센터로 안내","일본어 기기 고객은 이용권 자동 등록이 안 됨 → 번호 수기 등록 (수기 입력 시 0과 O 구분 주의)"]},
  {"s":"방문 후","why":"해지 요청이 방문 후 5일 안에 몰림 · 재방문 희망 12명","items":["다음 날 1차 전화 + 첫 주 집중 케어","재방문·원격케어 경로 마련 (월 1회·호출형 유료 방문 수요 확인)"]}];
 // 옛 형식 문자열은 괄호·따옴표 밖의 쉼표로 나눠 항목으로
 function splitItems(t){const out=[];let cur='',dep=0,q=false;for(const ch of String(t)){if(ch==='"')q=!q;if(!q&&'(（'.includes(ch))dep++;if(!q&&')）'.includes(ch))dep=Math.max(0,dep-1);if(ch===','&&!dep&&!q){out.push(cur.trim());cur=''}else cur+=ch}if(cur.trim())out.push(cur.trim());return out}
@@ -1498,17 +1508,21 @@ const CORE=[
   '같은 지역을 모아서 가면 효율은 오르지만, 그사이 고객이 기다려 주지 않을 수 있음',
   '방문 시점(다음 날·이틀 안 등)별 효과는 아직 모름 → 테스트로 기준을 찾아 가이드화']}];
 // 앱 개선 요청 (현장 공통 사항·센터장 회의 자료에서 정리, ★ = 회의 자료 상위 3개). 발표에서는 "12월 개선 계획이 있어 상세히 다루지 않음"으로 넘어감
-const APP_REQ=[
- ['글씨 · 버튼 크게 (시니어용 화면)','9건',1],
- ['말이 끝나면 자동으로 넘어가기 ("제출" 단계 간소화)','6건',1],
- ['레슨 시작까지 단계 줄이기','',1],
- ['대화 중 뒤로 가기 찾기 쉽게','3건'],
- ['관심사 · 직업 항목 추가 (종교, 주부 등)','4건'],
- ['이용권 자동 등록 안정화 (일본어 기기) · 번호 0과 O 구분','2건'],
- ['발음 인식 기준 완화','2건'],
- ['회원가입 아이디 중복 오류 확인','']];
+const APP_TOP=[
+ ['글씨 · 버튼 크게','시니어용 화면','글씨를 최대로 키워도 더 크게 원함 · 레슨 시작까지 버튼이 많음',9],
+ ['말이 끝나면 자동으로 넘어가기','"제출" 단계 간소화','"누르고 말하기 → 제출" 순서를 잊거나 다시 누르기를 불편해함',6],
+ ['레슨 시작까지 단계 줄이기','시작 동선 단순화','혼자서는 레슨 시작 화면까지 가기 어렵다는 반응',null]];
+const APP_MORE=[
+ ['관심사 · 직업 항목 추가','종교, 주부 등',4],
+ ['대화 중 뒤로 가기 찾기 쉽게','',3],
+ ['이용권 자동 등록 안정화','일본어 기기 · 번호 0과 O 구분',2],
+ ['발음 인식 기준 완화','',2],
+ ['회원가입 아이디 중복 오류 확인','',null]];
 function renderCore(){
-  if($('revApp'))$('revApp').innerHTML=`<p class="key-sub">12월 앱 개선 계획 참고용 · 현장에서 나온 요청 정리 (★ 우선 요청)</p><ul class="app-l">${APP_REQ.map(([t,c,s])=>`<li${s?' class="top"':''}><span>${s?'★ ':''}${t}</span>${c?`<em>${c}</em>`:''}</li>`).join('')}</ul>`;
+  if($('revApp')){const mx=Math.max(...APP_MORE.map(x=>x[2]||0),1);
+    $('revApp').innerHTML=`<p class="key-sub">현장 공통 사항에서 나온 앱 관련 요청 정리 · 숫자 = 건수 (센터장 회의 자료 기준)</p>
+    <div class="ap-top">${APP_TOP.map(([t,s,d,c],i)=>`<div class="ap-t"><div class="ap-h"><span class="ap-n">${i+1}</span><span class="ap-pri">우선 요청</span>${c!=null?`<b class="ap-c">${c}<small>건</small></b>`:''}</div><div class="ap-tt">${t}</div><div class="ap-s">${s}</div><div class="ap-d">${d}</div></div>`).join('')}</div>
+    <div class="ap-more-h">그 외 요청</div><div class="ap-more">${APP_MORE.map(([t,s,c])=>`<div class="ap-m"><div class="ap-ml"><span>${t}</span>${s?`<small>${s}</small>`:''}</div><b>${c!=null?c+'건':'–'}</b><div class="rv-bar"><i style="width:${(c||0)/mx*100}%"></i></div></div>`).join('')}</div>`}
   if($('revCore'))$('revCore').innerHTML=CORE.map((c,i)=>`<div class="core"><div class="core-l"><span class="core-n">${i+1}</span><div><div class="core-s">${c.s}</div><div class="core-w">${c.w}</div></div></div>
     <ul>${c.pts.map(p=>`<li>${p}</li>`).join('')}</ul></div>`).join('')
     +`<div class="core-end">고객 경험 · 케어 퀄리티 · 케어 최적화 — 세 가지가 갖춰져야 정규 운영 가능</div>`;
