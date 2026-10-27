@@ -213,7 +213,9 @@ main{word-break:keep-all;overflow-wrap:break-word}
 .vc-q{list-style:none;margin:0;padding:0;font-size:13.5px;line-height:1.6}.vc-q li{padding:5px 0 5px 12px;border-left:3px solid var(--accent-soft);margin-top:4px}
 .vc-pay ul{list-style:none;margin:0;padding:0}.vc-pay li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border);font-size:14px}
 .vc-pay li span{color:var(--text-2);text-align:right}.vc-pay p{margin:10px 0 0;font-size:12.5px;color:var(--text-2)}
-.vc-neg{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}.vc-neg .vc-h{margin:0 4px 0 0}
+.vc-neg-wrap{margin-top:16px}.vc-neg-wrap>.vc-h{margin-bottom:6px}
+.vc-neg{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.vc-g{font-size:12.5px;font-weight:700;color:var(--text);min-width:96px}
 .vc-chip{font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:5px 12px}.vc-chip b{color:var(--accent);margin-left:2px}
 @media(max-width:760px){.vc-grid{grid-template-columns:1fr}}
 .chap{display:flex;align-items:baseline;gap:10px;margin:30px 2px 10px;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--muted) 35%,transparent);word-break:keep-all}
@@ -1531,7 +1533,8 @@ const APP_MORE=[
 const VOICE={
  quotes:['"직접 와 주지 않았으면 아무것도 못 했을 것"','"배송 후 관리가 없으면 해지하려 했다"','"칭찬해야겠다" · 주변에 추천하겠다는 반응'],
  pay:[['월 1회 방문','3~4만 원'],['막힐 때 부르는 방식','1회 2~3만 원'],['주 1회 방문','회당 3만 원도 괜찮다는 고객 있음']],
- payNote:'주 1회 1만 원(월 4만 원)도 부담이라는 반응도 있음'};
+ payNote:'주 1회 1만 원(월 4만 원)도 부담이라는 반응도 있음',
+ neg:[['앱 사용 불편',['앱 글자와 버튼이 작아 잘 안 보임','대화 뒤 제출하기 버튼을 못 누름']],['영어 기초 부족',['기초가 부족해 처음영어가 맞음']]]};
 function renderCore(){
   if($('revApp')){const mx=Math.max(...APP_MORE.map(x=>x[2]||0),1);
     $('revApp').innerHTML=`<p class="key-sub">현장 공통 사항에서 나온 앱 관련 요청 정리</p>
@@ -1654,14 +1657,15 @@ function renderReview(A){
   // 고객 반응 (2026-10-27): 긍정 반응·재방문 희망 숫자는 데이터에서, 발언·유료 의향은 VOICE에서, 어려움은 현장 공통 사항 상위 4개
   if($('revVoice')){
     const pos=REV_ISSUES.find(x=>x.tone==='good'),re=REV_GOOD.find(g=>/재방문|지속 방문/.test(g[0]));
-    const neg=REV_ISSUES.filter(x=>!x.etc&&x.tone!=='good').sort((a,b)=>(b.c??b.ns.length)-(a.c??a.ns.length)).slice(0,4);
+    // 어려웠던 점은 VOICE.neg 묶음대로 (와이파이는 사실상 전원 지원이라 제외 — 2026-10-27 사용자 요청)
+    const iss=t=>REV_ISSUES.find(x=>x.t===t),cnt=x=>x.c??x.ns.length;
     $('revVoice').innerHTML=`<div class="vc-grid">
       <div class="vc-box"><div class="vc-h">긍정 반응</div><div class="vc-nums">${pos?`<div><b>${pos.c??pos.ns.length}<small>건</small></b><span>방문케어에 강한 긍정 반응</span></div>`:''}${re?`<div><b>${re[1].length}<small>명</small></b><span>재방문 · 추가 케어 희망</span></div>`:''}</div>
         <ul class="vc-q">${VOICE.quotes.map(q=>`<li>${q}</li>`).join('')}</ul></div>
       <div class="vc-box vc-pay"><div class="vc-h">비용을 내더라도 방문케어가 이어지길 원함</div>
         <ul>${VOICE.pay.map(([k,v])=>`<li><b>${k}</b><span>${v}</span></li>`).join('')}</ul><p>${VOICE.payNote}</p></div>
     </div>
-    <div class="vc-neg"><span class="vc-h">어려웠던 점</span>${neg.map(x=>`<span class="vc-chip">${x.t} <b>${x.c??x.ns.length}</b></span>`).join('')}</div>`;
+    <div class="vc-neg-wrap"><div class="vc-h">어려웠던 점</div>${VOICE.neg.map(([g,ts])=>`<div class="vc-neg"><span class="vc-g">${g}</span>${ts.map(iss).filter(Boolean).map(x=>`<span class="vc-chip">${x.t} <b>${cnt(x)}</b></span>`).join('')}</div>`).join('')}</div>`;
   }
   // 취소 사유: 방문 전 사유(불가피) / 방문·제품으로 줄일 수 있는 건 / 사유 미기록
   const SALES=REV_SALES,rcOf=l=>l.r?.rc||'';
