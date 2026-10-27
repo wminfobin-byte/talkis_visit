@@ -187,6 +187,12 @@ body:not(.authed) .auth-only{display:none!important}
 .card.key{position:relative;overflow:hidden;padding-top:24px;word-break:keep-all}
 .card.key::before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
 .card.key h2{font-size:19px;margin-bottom:6px}
+.chap{display:flex;align-items:baseline;gap:10px;margin:30px 2px 10px;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--muted) 35%,transparent);word-break:keep-all}
+.chap b{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.5px;white-space:nowrap}
+.chap span{font-size:17px;font-weight:800;color:var(--text)}
+.chap em{font-style:normal;font-size:12.5px;color:var(--text-2)}
+.chap.sub b{color:var(--muted)}.chap.sub span{font-size:15px;color:var(--text-2)}
+@media(max-width:760px){.chap{flex-wrap:wrap;gap:4px 10px}.chap em{flex-basis:100%}}
 .key-eye{font-size:11.5px;font-weight:800;letter-spacing:.5px;color:var(--accent);margin-bottom:2px}
 .key-sub{font-size:12.5px;color:var(--text-2);margin:0 0 6px}
 .ins{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;padding:16px 0;border-top:1px solid var(--border);align-items:start}
@@ -256,22 +262,25 @@ body:not(.authed) .auth-only{display:none!important}
     <div class="seg" id="metricSeg"><button data-metric="init">최초계약 기준</button><button data-metric="post">배송후 기준</button></div>
     <span class="mb-d" id="metricDesc"></span>
   </div>
+  <div class="chap" style="margin-top:14px"><b>1 결과</b><span>방문케어가 취소를 줄였나</span><em>택배 고객(같은 연령 구성)과 취소율 비교</em></div>
   <div id="verdict"></div>
   <div class="card hero-card" id="hero"></div>
-  <div id="revHead"></div>
+  <!-- 발표 순서 (2026-10-27 임원·타부서 발표용): 결과 → 현장 → 시사점 → 실행 → 부록 -->
   <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
-  <!-- 결과 리뷰 (방문·전화케어 현장 기록) -->
-  <div class="kpis" id="revKpis"></div>
-  <!-- 결론 두 카드는 결과 리뷰 KPI 바로 아래 (2026-10-26 사용자 요청 — 핵심이라 비중 있게) -->
-  <div class="card key"><div class="key-eye">결론</div><h2>임플리케이션 — 방문케어에서 확인한 것</h2><div id="revImpl"></div></div>
-  <div class="card key"><div class="key-eye">실행</div><h2>개선 의견 — 단계별로 바꿀 것</h2><div id="revFix"></div></div>
-  <div class="card"><h2>취소 사유 — 누가 막을 수 있었나</h2><div id="revCancel"></div></div>
-  <div class="card"><h2>현장에서 반복된 문제</h2><div id="revIssues"></div></div>
-  <div class="card"><h2>전화케어 진행</h2><div id="revCall"></div></div>
   <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
     <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
   <div class="card"><h2 id="daysTitle">기간별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
     <div class="tw" id="daysTable" style="margin-top:12px"></div></div>
+  <div class="chap"><b>2 현장</b><span>방문·전화케어에서 본 것</span><em>누가 왜 해지했고, 현장에서 무엇이 반복됐나</em></div>
+  <div class="kpis" id="revKpis"></div>
+  <div class="card"><h2>취소 사유 — 누가 막을 수 있었나</h2><div id="revCancel"></div></div>
+  <div class="card"><h2>현장에서 반복된 문제</h2><div id="revIssues"></div></div>
+  <div class="card"><h2>전화케어 진행</h2><div id="revCall"></div></div>
+  <div class="chap"><b>3 시사점 · 4 실행</b><span>그래서 무엇을 바꿀까</span><em>결과와 현장 기록에서 나온 결론, 단계별 개선안</em></div>
+  <div class="card key"><div class="key-eye">결론</div><h2>임플리케이션 — 방문케어에서 확인한 것</h2><div id="revImpl"></div></div>
+  <div class="card key"><div class="key-eye">실행</div><h2>개선 의견 — 단계별로 바꿀 것</h2><div id="revFix"></div></div>
+  <div class="chap sub"><b>부록</b><span>데이터 기준 · 판정 근거 · 건별 기록</span></div>
+  <div id="revHead"></div>
   <details class="card fold"><summary>판정 기준 · 신뢰도<span class="fold-hint">펼치기</span></summary><div id="sigExplain" style="margin-top:14px"></div></details>
   <details class="card fold"><summary>상세 — 문제별 설명 · 좋았던 점 · 전화케어 고객별<span class="fold-hint">펼치기</span></summary><div id="revMore" style="margin-top:14px"></div></details>
   <details class="card fold"><summary>방문·전화케어 건별 기록<span class="fold-hint">펼치기</span></summary><div class="tw" id="revRows" style="margin-top:14px"></div></details>
