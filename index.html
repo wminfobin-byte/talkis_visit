@@ -1471,8 +1471,8 @@ const DEF_IMPL=[
  {"t":"고연령에 맞춘 화면이 더해지면 방문 효과가 더 커짐","d":"방문 때 함께 하면 잘 따라왔지만, 혼자 학습하는 단계에서는 글씨 크기·버튼 순서·발음 인식을 어려워하는 의견이 많았음\n— 방문만으로는 채우기 어려운 부분\n연말 글씨 확대 등 앱 개선과 방문케어가 함께 가면 시너지 기대","k":"9건","kl":"글씨·버튼 관련 의견","tone":"bad"}];
 const DEF_NEXT={"t":"앱 개선 후 2차 방문케어 테스트","d":"12월 앱 개선 이후 2차 방문케어 테스트 진행","chk":["앱 개선에 대한 고객 반응도","앱 관련 리스크를 줄인 상태에서 방문케어에 대한 고객 경험 만족도"]};
 const DEF_FIX=[
- {"s":"방문 전","why":"와이파이·인터넷 연결 7가구 · 방문 일정·출입 문제 7건","items":["설치가 어려운 고객은 방문 우선 배정 (인터넷 없음 등)","해피콜 때 인터넷·와이파이 유무 확인","기기를 퀵으로 받는 경우 방문 시간 전에 도착하도록 일정 관리","방문케어 예약 때 담당 코디가 \"본사 직원이 방문한다\"고 미리 안내","고객 자택별 출입 방법·주차 등록 등 방문 관련 사항 미리 확인","메모지·펜·커터칼 지참"]},
- {"s":"방문 중","why":"처음영어가 맞음 6가구 · 방문 1건 평균 64분 · 계약 내용 재문의 4건","items":["최소 60분 확보","처음영어·보카부터 시작해 목표·주간 학습량 설정","아이디·비밀번호 규칙 통일","레벨테스트 건너뛰고 자기소개부터","화면 꺼짐 시간 연장","계약 관련 문의는 고객센터로 안내","일본어로 나간 기기는 영어 이용권 번호 수기 등록 (0과 O 주의)"]},
+ {"s":"방문 전","why":"와이파이·인터넷 연결 7건 · 방문 일정·출입 문제 7건","items":["설치가 어려운 고객은 방문 우선 배정 (인터넷 없음 등)","해피콜 때 인터넷·와이파이 유무 확인","기기를 퀵으로 받는 경우 방문 시간 전에 도착하도록 일정 관리","방문케어 예약 때 담당 코디가 \"본사 직원이 방문한다\"고 미리 안내","고객 자택별 출입 방법·주차 등록 등 방문 관련 사항 미리 확인","메모지·펜·커터칼 지참"]},
+ {"s":"방문 중","why":"처음영어가 맞음 6건 · 방문 1건 평균 64분 · 계약 내용 재문의 4건","items":["최소 60분 확보","처음영어·보카부터 시작해 목표·주간 학습량 설정","아이디·비밀번호 규칙 통일","레벨테스트 건너뛰고 자기소개부터","화면 꺼짐 시간 연장","계약 관련 문의는 고객센터로 안내","일본어로 나간 기기는 영어 이용권 번호 수기 등록 (0과 O 주의)"]},
  {"s":"방문 후","why":"해지 요청이 방문 후 5일 안에 몰림 · 재방문 희망 12명","items":["다음 날 1차 전화 + 첫 주 집중 케어","재방문·원격케어 경로 마련 (월 1회·호출형 유료 방문 수요 확인)"]}];
 // 옛 형식 문자열은 괄호·따옴표 밖의 쉼표로 나눠 항목으로
 function splitItems(t){const out=[];let cur='',dep=0,q=false;for(const ch of String(t)){if(ch==='"')q=!q;if(!q&&'(（'.includes(ch))dep++;if(!q&&')）'.includes(ch))dep=Math.max(0,dep-1);if(ch===','&&!dep&&!q){out.push(cur.trim());cur=''}else cur+=ch}if(cur.trim())out.push(cur.trim());return out}
@@ -1499,12 +1499,12 @@ const CORE=[
   '방문 시점(다음 날·이틀 안 등)별 효과는 아직 모름 → 테스트로 기준을 찾아 가이드화']}];
 // 앱 개선 요청 (현장 공통 사항·센터장 회의 자료에서 정리, ★ = 회의 자료 상위 3개). 발표에서는 "12월 개선 계획이 있어 상세히 다루지 않음"으로 넘어감
 const APP_REQ=[
- ['글씨 · 버튼 크게 (시니어용 화면)','9가구',1],
- ['말이 끝나면 자동으로 넘어가기 ("제출" 단계 간소화)','6가구',1],
+ ['글씨 · 버튼 크게 (시니어용 화면)','9건',1],
+ ['말이 끝나면 자동으로 넘어가기 ("제출" 단계 간소화)','6건',1],
  ['레슨 시작까지 단계 줄이기','',1],
- ['대화 중 뒤로 가기 찾기 쉽게','3가구'],
- ['관심사 · 직업 항목 추가 (종교, 주부 등)','4가구'],
- ['이용권 자동 등록 안정화 (일본어 기기) · 번호 0과 O 구분','2가구'],
+ ['대화 중 뒤로 가기 찾기 쉽게','3건'],
+ ['관심사 · 직업 항목 추가 (종교, 주부 등)','4건'],
+ ['이용권 자동 등록 안정화 (일본어 기기) · 번호 0과 O 구분','2건'],
  ['발음 인식 기준 완화','2건'],
  ['회원가입 아이디 중복 오류 확인','']];
 function renderCore(){
@@ -1632,12 +1632,12 @@ function renderReview(A){
     +grp('사유 미기록 (메터모스트에 해지 언급 없음)',CX.filter(l=>!rcOf(l)))
     +(pend.length?`<div class="rv-grp"><div class="h"><span>참고 — 해지 의사만 밝힘 (반품일 없음 · 해지로 안 셈)</span><span>${pend.length}건</span></div>${pend.map(r=>`<div class="rv-row"><span>#${r.n} ${revWho(r.n)} <span class="w">${r.age}세 · ${esc(r.rc)}</span></span><span class="tag wait">해지 의사 · 반품 전</span></div>`).join('')}</div>`:'')
     +`<p class="note">해지 = 신청자관리 반품일 또는 수기 배송전취소. 사유는 메터모스트 기록에서 가져옵니다. 설치(와이파이·가입) 실패로 해지된 건은 없습니다.</p>`;
-  // c = 센터장 회의 자료의 가구 수(있으면 그 숫자), etc = 회의 자료에 없고 현장 기록에만 있는 항목
+  // c = 센터장 회의 자료의 건수(있으면 그 숫자), etc = 회의 자료에 없고 현장 기록에만 있는 항목
   const icnt=x=>x.c??x.ns.length,max=Math.max(...REV_ISSUES.map(icnt));
   const imini=x=>`<div class="rv-mini${x.tone==='good'?' good':''}"><span>${x.t}</span><span class="c">${icnt(x)}</span><div class="rv-bar"><i style="width:${icnt(x)/max*100}%"></i></div></div>`;
   const iMain=REV_ISSUES.filter(x=>!x.etc),iEtc=REV_ISSUES.filter(x=>x.etc);
   $('revIssues').innerHTML=iMain.map(imini).join('')
-    +(iMain.some(x=>x.c!=null)?`<p class="note" style="margin-top:0">숫자 = 가구 수 (센터장 회의 자료 기준)</p>`:'')
+    +(iMain.some(x=>x.c!=null)?`<p class="note" style="margin-top:0">숫자 = 건수 (센터장 회의 자료 기준)</p>`:'')
     +(iEtc.length?`<div class="rv-etc"><div class="h">그 외 현장 기록</div>${iEtc.map(imini).join('')}</div>`:'')
     +`<p class="note">좋았던 점: 재방문 희망 ${REV_GOOD[1][1].length} · 목표를 같이 잡아 주니 동기 부여 ${REV_GOOD[2][1].length}</p>`;
   const act=REV.filter(r=>!isCx(r)),byC=[3,2,1,0].map(c=>[c,act.filter(r=>r.calls===c)]);
@@ -1647,7 +1647,7 @@ function renderReview(A){
   renderKeyCards(N);
   // 상세 (접힘)
   const wait=act.filter(r=>!r.calls&&!r.next),actC=act.filter(r=>r.calls||r.next).sort((a,b)=>b.calls-a.calls||a.n-b.n);
-  $('revMore').innerHTML=`<div class="grid2"><div><h3 style="margin-top:0">문제별 설명과 개선안</h3><div class="rv-list">${REV_ISSUES.map(x=>`<div class="rv-item"><b>${x.etc?'그 외 · ':''}${x.t}</b><span class="c">${icnt(x)}${x.c!=null?'가구':'건'}</span><div class="d">${x.d} <span style="color:var(--muted)">${x.ns.length===icnt(x)?list(x.ns):''}</span></div><div class="fx">→ ${x.fx}</div></div>`).join('')}</div>
+  $('revMore').innerHTML=`<div class="grid2"><div><h3 style="margin-top:0">문제별 설명과 개선안</h3><div class="rv-list">${REV_ISSUES.map(x=>`<div class="rv-item"><b>${x.etc?'그 외 · ':''}${x.t}</b><span class="c">${icnt(x)}건</span><div class="d">${x.d} <span style="color:var(--muted)">${x.ns.length===icnt(x)?list(x.ns):''}</span></div><div class="fx">→ ${x.fx}</div></div>`).join('')}</div>
     <h3>고객 반응이 좋았던 점</h3><div class="rv-list">${REV_GOOD.map(([t,ns,d])=>`<div class="rv-item"><b>${t}</b><span class="c">${ns.length}건</span><div class="d">${d} <span style="color:var(--muted)">${list(ns)}</span></div></div>`).join('')}</div></div>
     <div><h3 style="margin-top:0">전화케어 고객별</h3><div class="tw"><table><tr><th>고객</th><th>방문일</th><th>완료</th><th>다음 예정</th></tr>${actC.map(r=>`<tr><td>#${r.n} ${revWho(r.n)} <span style="color:var(--text-2)">${r.age}세</span></td><td>${r.vd.replace('-','/')}</td><td>${dots(r.calls)}</td><td>${r.next?r.next.replace('-','/'):'–'}</td></tr>`).join('')}</table></div>
     <p class="note">1차 통화·예약 전: ${list(wait.map(r=>r.n))}</p></div></div>`;
