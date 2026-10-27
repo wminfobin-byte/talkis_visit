@@ -204,6 +204,18 @@ body:not(.authed) .auth-only{display:none!important}
 .ap-m small{display:block;font-size:12px;color:var(--text-2)}.ap-m b{font-size:13px;color:var(--accent);font-variant-numeric:tabular-nums}
 @media(max-width:760px){.ap-top,.ap-more{grid-template-columns:1fr}}
 main{word-break:keep-all;overflow-wrap:break-word}
+.vc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:6px}
+.vc-box{background:var(--surface);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+.vc-h{font-size:12.5px;font-weight:800;color:var(--accent);margin-bottom:10px}
+.vc-nums{display:flex;gap:28px;margin-bottom:10px}.vc-nums div{display:flex;flex-direction:column}
+.vc-nums b{font-size:30px;font-weight:800;color:var(--accent);line-height:1.1;font-variant-numeric:tabular-nums}.vc-nums b small{font-size:13px;margin-left:2px}
+.vc-nums span{font-size:12.5px;color:var(--text-2);margin-top:2px}
+.vc-q{list-style:none;margin:0;padding:0;font-size:13.5px;line-height:1.6}.vc-q li{padding:5px 0 5px 12px;border-left:3px solid var(--accent-soft);margin-top:4px}
+.vc-pay ul{list-style:none;margin:0;padding:0}.vc-pay li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border);font-size:14px}
+.vc-pay li span{color:var(--text-2);text-align:right}.vc-pay p{margin:10px 0 0;font-size:12.5px;color:var(--text-2)}
+.vc-neg{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}.vc-neg .vc-h{margin:0 4px 0 0}
+.vc-chip{font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:5px 12px}.vc-chip b{color:var(--accent);margin-left:2px}
+@media(max-width:760px){.vc-grid{grid-template-columns:1fr}}
 .chap{display:flex;align-items:baseline;gap:10px;margin:30px 2px 10px;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--muted) 35%,transparent);word-break:keep-all}
 .chap b{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.5px;white-space:nowrap}
 .chap span{font-size:17px;font-weight:800;color:var(--text)}
@@ -318,15 +330,15 @@ main{word-break:keep-all;overflow-wrap:break-word}
 <section class="panel on" id="p-sum">
   <div class="chap" style="margin-top:4px"><b>개요</b><span>테스트 진행 현황</span><em>방문 대상 · 방문 완료 · 해지 · 이용 중 · 전화케어</em></div>
   <div class="kpis" id="revKpis"></div>
+  <div class="card key voice"><div class="key-eye">고객 반응</div><h2>방문케어에 대한 고객 반응</h2><div id="revVoice"></div></div>
   <div class="metric-bar">
     <span class="mb-l">비교 기준</span>
     <div class="seg" id="metricSeg"><button data-metric="init">최초계약 기준</button><button data-metric="post">배송후 기준</button></div>
-    <span class="mb-d" id="metricDesc"></span>
   </div>
   <div class="chap" style="margin-top:14px"><b>1 결과</b><span>택배 vs 방문케어 취소율 비교</span><em>같은 연령 구성의 택배 고객 기준</em></div>
   <div id="verdict"></div>
   <div class="card hero-card" id="hero"></div>
-  <!-- 발표 순서 (2026-10-27): 개요 → 1 결과(+취소 사유) → 2 핵심 → 3 운영 체크리스트 → 4 앱 개선 요청 → 5 다음 단계 → 6 현장 기록 → 부록 -->
+  <!-- 발표 순서 (2026-10-27): 개요 → 1 결과(+취소 사유) → 2 핵심 → 3 운영 체크리스트 → 4 앱 개선 요청 → 5 다음 단계 → 부록(현장 기록 접힘) -->
   <div class="card"><h2>취소율 비교 개요 — 택배 vs 방문설치</h2><div class="tw" id="wmTable"></div></div>
   <div class="card"><h2 id="ageTitle">연령대별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cAge"></canvas></div>
     <div class="tw" id="cmpTable" style="margin-top:12px"></div></div>
@@ -341,11 +353,9 @@ main{word-break:keep-all;overflow-wrap:break-word}
   <div class="card key appreq"><div class="key-eye">앱 개선</div><h2>앱 개선 요청 사항</h2><div id="revApp"></div></div>
   <div class="chap"><b>5 다음 단계</b><span>앱 개선 후 2차 테스트</span></div>
   <div class="card key next"><div class="key-eye">다음 단계</div><div id="revNext"></div></div>
-  <div class="chap"><b>6 현장 기록</b><span>고객 반응 및 운영 이슈</span><em>현장 공통 사항 · 전화케어</em></div>
-  <div class="card"><h2>현장 공통 사항</h2><div id="revIssues"></div></div>
-  <div class="card"><h2>전화케어 진행</h2><div id="revCall"></div></div>
-  <div class="chap sub"><b>부록</b><span>데이터 기준 · 판정 근거 · 건별 기록</span></div>
+  <div class="chap sub"><b>부록</b><span>현장 기록 · 판정 근거 · 건별 기록</span></div>
   <div id="revHead"></div>
+  <details class="card fold"><summary>현장 기록 — 현장 공통 사항 · 전화케어 진행<span class="fold-hint">펼치기</span></summary><div style="margin-top:14px"><h3 style="margin:0 0 10px">현장 공통 사항</h3><div id="revIssues"></div><h3 style="margin:22px 0 10px">전화케어 진행</h3><div id="revCall"></div></div></details>
   <details class="card fold"><summary>판정 기준 · 신뢰도<span class="fold-hint">펼치기</span></summary><div id="sigExplain" style="margin-top:14px"></div></details>
   <details class="card fold"><summary>상세 — 문제별 설명 · 좋았던 점 · 전화케어 고객별<span class="fold-hint">펼치기</span></summary><div id="revMore" style="margin-top:14px"></div></details>
   <details class="card fold"><summary>방문·전화케어 건별 기록<span class="fold-hint">펼치기</span></summary><div class="tw" id="revRows" style="margin-top:14px"></div></details>
@@ -1225,7 +1235,7 @@ function renderMetricBar(A){
     b.disabled=b.dataset.metric==='init'&&!A.M.init.avail;
     b.title=b.disabled?'일마감 신청자관리 파일이 있어야 계산됩니다':'';
   });
-  $('metricDesc').textContent=METRIC_DESC[X.key];
+  if($('metricDesc'))$('metricDesc').textContent=METRIC_DESC[X.key];
 }
 $('metricSeg').addEventListener('click',e=>{const m=e.target.closest('button')?.dataset.metric;if(m&&!e.target.disabled&&m!==S.cmpMetric){S.cmpMetric=m;saveSettings();render()}});
 function renderSummary(A,R,E){
@@ -1518,9 +1528,13 @@ const APP_MORE=[
  ['이용권 자동 등록 안정화','일본어 기기 · 번호 0과 O 구분',2],
  ['발음 인식 기준 완화','',2],
  ['회원가입 아이디 중복 오류 확인','',null]];
+const VOICE={
+ quotes:['"직접 와 주지 않았으면 아무것도 못 했을 것"','"배송 후 관리가 없으면 해지하려 했다"','"칭찬해야겠다" · 주변에 추천하겠다는 반응'],
+ pay:[['월 1회 방문','3~4만 원'],['막힐 때 부르는 방식','1회 2~3만 원'],['주 1회 방문','회당 3만 원도 괜찮다는 고객 있음']],
+ payNote:'주 1회 1만 원(월 4만 원)도 부담이라는 반응도 있음'};
 function renderCore(){
   if($('revApp')){const mx=Math.max(...APP_MORE.map(x=>x[2]||0),1);
-    $('revApp').innerHTML=`<p class="key-sub">현장 공통 사항에서 나온 앱 관련 요청 정리 · 숫자 = 건수 (센터장 회의 자료 기준)</p>
+    $('revApp').innerHTML=`<p class="key-sub">현장 공통 사항에서 나온 앱 관련 요청 정리</p>
     <div class="ap-top">${APP_TOP.map(([t,s,d,c],i)=>`<div class="ap-t"><div class="ap-h"><span class="ap-n">${i+1}</span><span class="ap-pri">우선 요청</span>${c!=null?`<b class="ap-c">${c}<small>건</small></b>`:''}</div><div class="ap-tt">${t}</div><div class="ap-s">${s}</div><div class="ap-d">${d}</div></div>`).join('')}</div>
     <div class="ap-more-h">그 외 요청</div><div class="ap-more">${APP_MORE.map(([t,s,c])=>`<div class="ap-m"><div class="ap-ml"><span>${t}</span>${s?`<small>${s}</small>`:''}</div><b>${c!=null?c+'건':'–'}</b><div class="rv-bar"><i style="width:${(c||0)/mx*100}%"></i></div></div>`).join('')}</div>`}
   if($('revCore'))$('revCore').innerHTML=CORE.map((c,i)=>`<div class="core"><div class="core-l"><span class="core-n">${i+1}</span><div><div class="core-s">${c.s}</div><div class="core-w">${c.w}</div></div></div>
@@ -1637,6 +1651,18 @@ function renderReview(A){
     +kpi('해지',`${CX.length}건`,`반품 ${CX.length-nPre} · 배송전취소 ${nPre}<br>신청자관리 기준`)
     +kpi('이용 중',`${use}건`,pend.length?`해지 의사 ${pend.length}명 포함<br>(아직 반품 전)`:'신청자관리 반품 없음')
     +kpi('전화케어',`${callTot}회`,`이용 고객 중<br>${called}명 진행`);
+  // 고객 반응 (2026-10-27): 긍정 반응·재방문 희망 숫자는 데이터에서, 발언·유료 의향은 VOICE에서, 어려움은 현장 공통 사항 상위 4개
+  if($('revVoice')){
+    const pos=REV_ISSUES.find(x=>x.tone==='good'),re=REV_GOOD.find(g=>/재방문|지속 방문/.test(g[0]));
+    const neg=REV_ISSUES.filter(x=>!x.etc&&x.tone!=='good').sort((a,b)=>(b.c??b.ns.length)-(a.c??a.ns.length)).slice(0,4);
+    $('revVoice').innerHTML=`<div class="vc-grid">
+      <div class="vc-box"><div class="vc-h">긍정 반응</div><div class="vc-nums">${pos?`<div><b>${pos.c??pos.ns.length}<small>건</small></b><span>방문케어에 강한 긍정 반응</span></div>`:''}${re?`<div><b>${re[1].length}<small>명</small></b><span>재방문 · 추가 케어 희망</span></div>`:''}</div>
+        <ul class="vc-q">${VOICE.quotes.map(q=>`<li>${q}</li>`).join('')}</ul></div>
+      <div class="vc-box vc-pay"><div class="vc-h">비용을 내더라도 방문케어가 이어지길 원함</div>
+        <ul>${VOICE.pay.map(([k,v])=>`<li><b>${k}</b><span>${v}</span></li>`).join('')}</ul><p>${VOICE.payNote}</p></div>
+    </div>
+    <div class="vc-neg"><span class="vc-h">어려웠던 점</span>${neg.map(x=>`<span class="vc-chip">${x.t} <b>${x.c??x.ns.length}</b></span>`).join('')}</div>`;
+  }
   // 취소 사유: 방문 전 사유(불가피) / 방문·제품으로 줄일 수 있는 건 / 사유 미기록
   const SALES=REV_SALES,rcOf=l=>l.r?.rc||'';
   const row=l=>`<div class="rv-row"><span>${cxWho(l)} <span class="w">${l.c.age??l.r?.age??'?'}세 · ${esc(rcOf(l))||'사유 미기록'}</span></span>${cxTag(l.c)}</div>`;
@@ -1645,13 +1671,13 @@ function renderReview(A){
     +grp('방문 후 학습 · 사용 관련',CX.filter(l=>rcOf(l)&&!SALES.includes(rcOf(l))))
     +grp('사유 미기록 (메터모스트에 해지 언급 없음)',CX.filter(l=>!rcOf(l)))
     +(pend.length?`<div class="rv-grp"><div class="h"><span>참고 — 해지 의사만 밝힘 (반품일 없음 · 해지로 안 셈)</span><span>${pend.length}건</span></div>${pend.map(r=>`<div class="rv-row"><span>#${r.n} ${revWho(r.n)} <span class="w">${r.age}세 · ${esc(r.rc)}</span></span><span class="tag wait">해지 의사 · 반품 전</span></div>`).join('')}</div>`:'')
-    +`<p class="note">해지 = 신청자관리 반품일 또는 수기 배송전취소. 사유는 메터모스트 기록에서 가져옵니다. 설치(와이파이·가입) 실패로 해지된 건은 없습니다.</p>`;
+    ;
   // c = 센터장 회의 자료의 건수(있으면 그 숫자), etc = 회의 자료에 없고 현장 기록에만 있는 항목
   const icnt=x=>x.c??x.ns.length,max=Math.max(...REV_ISSUES.map(icnt));
   const imini=x=>`<div class="rv-mini${x.tone==='good'?' good':''}"><span>${x.t}</span><span class="c">${icnt(x)}</span><div class="rv-bar"><i style="width:${icnt(x)/max*100}%"></i></div></div>`;
   const iMain=REV_ISSUES.filter(x=>!x.etc),iEtc=REV_ISSUES.filter(x=>x.etc);
   $('revIssues').innerHTML=iMain.map(imini).join('')
-    +(iMain.some(x=>x.c!=null)?`<p class="note" style="margin-top:0">숫자 = 건수 (센터장 회의 자료 기준)</p>`:'')
+
     +(iEtc.length?`<div class="rv-etc"><div class="h">그 외 현장 기록</div>${iEtc.map(imini).join('')}</div>`:'')
     +`<p class="note">좋았던 점: 재방문 희망 ${REV_GOOD[1][1].length} · 목표를 같이 잡아 주니 동기 부여 ${REV_GOOD[2][1].length}</p>`;
   const act=REV.filter(r=>!isCx(r)),byC=[3,2,1,0].map(c=>[c,act.filter(r=>r.calls===c)]);
