@@ -1430,15 +1430,15 @@ const DEF_IMPL=[
  {t:'고연령에 맞춘 화면이 더해지면 방문 효과가 더 커진다.',d:'방문 때 함께 하면 잘 따라왔지만, 혼자 학습하는 단계에서는 글씨 크기·버튼 순서·발음 인식을 어려워하는 의견이 많았다 — 방문만으로는 채우기 어려운 부분. 연말 글씨 확대 등 앱 개선과 방문케어가 함께 가면 시너지가 기대된다.',k:'9건',kl:'글씨·버튼 관련 의견',tone:'bad',go:'제품'}];
 const DEF_NEXT={"t":"앱 개선과 함께 2차 방문케어 테스트 제안","d":"방문케어는 설치 장벽을 없애 첫 1주일 이탈을 크게 줄였다. 남은 과제는 고객이 혼자서도 학습을 이어가는 것이다. 글씨 확대·간편 모드(연말 예정), \"제출\" 단계 간소화, 발음 인식 개선이 반영된 뒤 방문케어를 다시 테스트해, 두 가지가 함께 갔을 때의 효과를 확인해 보면 좋겠다."};
 const DEF_FIX=[
- {s:'판매',why:'계약 내용을 잘 모름 4건',items:['상담은 천천히 설명','계약 직후 확인 콜 — 월 납부액·약정·확인 결제(5천 원)','설치가 어려운 고객(인터넷 없음 등)은 방문 우선 배정']},
+ {"s":"계약 직후","why":"계약·결제 내용을 다시 묻는 고객 4건","items":["계약 내용 요약 문자 자동 발송 — 월 납부액·약정·확인 결제(5천 원)","설치가 어려운 고객(인터넷 없음 등)은 방문 우선 배정"]},
  {s:'방문 전',why:'와이파이·인터넷 문제 9건 · 일정·배송·출입 7건',items:['해피콜로 인터넷 유무·공유기 비밀번호 확인','기기 도착 확인 후 방문 확정','예약 때 방문자(본사 직원) 안내, 전날 이름·사진 문자','아파트는 도착 즉시 주차 등록 (단지별 인증·출입 방법 확인)','메모지·펜·커터칼 지참']},
- {s:'방문 중',why:'본과정이 어려워 낮춰 시작 11건 · 방문 1건 약 60분',items:['최소 60분 확보','처음영어·보카부터 시작해 목표·주간 학습량 설정','"학습 순서 한 장 안내서" 표준화','아이디·비밀번호 규칙 통일','레벨테스트 건너뛰고 자기소개부터','제출하기는 막히기 전에 먼저 시범','화면 꺼짐 시간 연장']},
+ {s:'방문 중',why:'본과정이 어려워 낮춰 시작 11건 · 방문 1건 약 60분',items:['최소 60분 확보','처음영어·보카부터 시작해 목표·주간 학습량 설정','"학습 순서 한 장 안내서" 표준화','아이디·비밀번호 규칙 통일','레벨테스트 건너뛰고 자기소개부터','제출하기는 막히기 전에 먼저 시범','화면 꺼짐 시간 연장','계약 내용(월 납부액·약정) 한 번 더 안내']},
  {s:'방문 후',why:'해지 요청이 방문 후 5일 안에 몰림 · 재방문 희망 12명',items:['다음 날 1차 전화 + 첫 주 집중 케어','재방문·원격케어 경로 마련 (월 1회·호출형 유료 방문 수요 확인)','일시불 전환 절차']},
  {s:'제품',why:'글씨·버튼 불편 9건 · 계정·이용권 오류 4건 · 발음 인식 2건',items:['글씨 확대(연말 예정)·간편 모드','"제출" 단계 간소화','발음 인식 완화','아이디 중복 오류·이용권 자동 등록·0/O 혼동 수정','관심사 "종교"·직업 "주부" 등 고연령 항목 추가','모범답안 한글 해석']}];
 // 옛 형식 문자열은 괄호·따옴표 밖의 쉼표로 나눠 항목으로
 function splitItems(t){const out=[];let cur='',dep=0,q=false;for(const ch of String(t)){if(ch==='"')q=!q;if(!q&&'(（'.includes(ch))dep++;if(!q&&')）'.includes(ch))dep=Math.max(0,dep-1);if(ch===','&&!dep&&!q){out.push(cur.trim());cur=''}else cur+=ch}if(cur.trim())out.push(cur.trim());return out}
 const fixOf=f=>Array.isArray(f)?{s:f[0],why:'',items:Array.isArray(f[1])?f[1]:splitItems(f[1])}:{s:f.s,why:f.why||'',items:Array.isArray(f.items)?f.items:splitItems(f.items||'')};
-const FX_TONE={'판매':['var(--warn)','var(--warn-bg)'],'제품':['var(--s-ship)','var(--ship-soft)']};
+const FX_TONE={'계약 직후':['var(--warn)','var(--warn-bg)'],'제품':['var(--s-ship)','var(--ship-soft)']};
 const IN_TONE={good:['var(--good)','var(--good-bg)'],bad:['var(--bad)','var(--bad-bg)'],warn:['var(--warn)','var(--warn-bg)'],accent:['var(--accent)','var(--accent-soft)']};
 function renderKeyCards(N){
   const F=(REV_FIX||DEF_FIX).map(fixOf),I=REV_IMPL||DEF_IMPL;
@@ -1448,7 +1448,7 @@ function renderKeyCards(N){
     return`<div class="ins">${x.k?`<div class="ins-st" style="--tc:${c};--tbg:${bg}"><div class="v">${esc(x.k)}</div><div class="l">${esc(x.kl||'').replace(/\s+\(/,'<br>(')}</div></div>`:`<div class="ins-st" style="--tc:var(--accent);--tbg:var(--accent-soft)"><div class="v">${i+1}</div></div>`}
       <div><div class="ins-t"><span class="n">${i+1}</span><span>${esc(x.t)}</span></div><div class="ins-d">${esc(x.d).split(/(?<=\.)\s+|\s+(?=[—→]\s)/).map(s=>`<span>${s}</span>`).join('')}</div>
       ${g>=0?`<a class="ins-go" href="#fxs-${g}" data-fx="${g}">→ 개선 의견 · ${esc(F[g].s)}</a>`:''}</div></div>`}).join('');
-  $('revFix').innerHTML=`<p class="key-sub">판매부터 제품까지 고객이 거치는 순서대로 · 할 일 ${F.reduce((a,f)=>a+f.items.length,0)}가지</p>`+F.map((f,i)=>{
+  $('revFix').innerHTML=`<p class="key-sub">계약부터 제품까지 고객이 거치는 순서대로 · 할 일 ${F.reduce((a,f)=>a+f.items.length,0)}가지</p>`+F.map((f,i)=>{
     const [c,bg]=FX_TONE[f.s]||['var(--accent)','var(--accent-soft)'];
     return`<div class="fxs" id="fxs-${i}" style="--tc:${c};--tbg:${bg}"><div class="fxs-l"><span class="fxs-n">${i+1}</span><div><div class="fxs-s">${esc(f.s)}</div>${f.why?`<div class="fxs-why">${esc(f.why)}</div>`:''}</div></div>
       <ul>${f.items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`}).join('');
