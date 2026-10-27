@@ -190,6 +190,12 @@ body:not(.authed) .auth-only{display:none!important}
 .card.key::before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
 .card.key h2{font-size:19px;margin-bottom:6px}
 .app-note{margin:10px 4px 0;font-size:12.5px;color:var(--text-2);word-break:keep-all}
+.app-req h2{font-size:15px}
+.app-l{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;font-size:13.5px;word-break:keep-all}
+.app-l li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--border)}
+.app-l li.top span{font-weight:700}.app-l li.top span{color:var(--text)}
+@media(max-width:640px){.app-l{grid-template-columns:1fr}}
+.app-l em{font-style:normal;color:var(--text-2);font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .chap{display:flex;align-items:baseline;gap:10px;margin:30px 2px 10px;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--muted) 35%,transparent);word-break:keep-all}
 .chap b{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.5px;white-space:nowrap}
 .chap span{font-size:17px;font-weight:800;color:var(--text)}
@@ -302,14 +308,14 @@ body:not(.authed) .auth-only{display:none!important}
 
 <!-- ① 취소율 비교 (핵심) -->
 <section class="panel on" id="p-sum">
-  <div class="chap" style="margin-top:4px"><b>개요</b><span>무엇을 했나</span><em>방문 대상 · 방문 완료 · 해지 · 이용 중 · 전화케어</em></div>
+  <div class="chap" style="margin-top:4px"><b>개요</b><span>테스트 진행 현황</span><em>방문 대상 · 방문 완료 · 해지 · 이용 중 · 전화케어</em></div>
   <div class="kpis" id="revKpis"></div>
   <div class="metric-bar">
     <span class="mb-l">비교 기준</span>
     <div class="seg" id="metricSeg"><button data-metric="init">최초계약 기준</button><button data-metric="post">배송후 기준</button></div>
     <span class="mb-d" id="metricDesc"></span>
   </div>
-  <div class="chap" style="margin-top:14px"><b>1 결과</b><span>방문케어가 취소를 줄였나</span><em>택배 고객(같은 연령 구성)과 취소율 비교</em></div>
+  <div class="chap" style="margin-top:14px"><b>1 결과</b><span>택배 vs 방문케어 취소율 비교</span><em>같은 연령 구성의 택배 고객 기준</em></div>
   <div id="verdict"></div>
   <div class="card hero-card" id="hero"></div>
   <!-- 발표 순서 (2026-10-27): 개요(KPI) → 결과(+취소 사유) → 핵심 세 가지 → 다음 단계 → 현장 기록 → 부록 -->
@@ -321,10 +327,10 @@ body:not(.authed) .auth-only{display:none!important}
   <div class="card"><h2>취소 사유</h2><div id="revCancel"></div></div>
   <div class="chap"><b>2 핵심</b><span>정규 운영을 위한 세 가지</span><em>고객 경험 · 케어 퀄리티 · 케어 최적화</em></div>
   <div class="card key"><div class="key-eye">핵심</div><h2>세 가지가 갖춰져야 정규 운영할 수 있음</h2><div id="revCore"></div></div>
-  <p class="app-note">ⓘ 그동안 여러 차례 공유된 앱 개선 사항은 12월 개선 계획이 잡혀 있어 이 자료에서는 따로 다루지 않음</p>
+  <div class="card app-req"><h2>앱 개선 요청 사항 정리</h2><div id="revApp"></div></div>
   <div class="chap"><b>3 다음 단계</b><span>앱 개선 후 2차 테스트</span></div>
   <div class="card key next"><div class="key-eye">다음 단계</div><div id="revNext"></div></div>
-  <div class="chap"><b>4 현장 기록</b><span>현장에서 확인한 것</span><em>고객 반응 · 전화케어 · 운영 체크리스트</em></div>
+  <div class="chap"><b>4 현장 기록</b><span>고객 반응 및 운영 이슈</span><em>현장 공통 사항 · 전화케어 · 운영 체크리스트</em></div>
   <div class="card"><h2>현장 공통 사항</h2><div id="revIssues"></div></div>
   <div class="card"><h2>전화케어 진행</h2><div id="revCall"></div></div>
   <div class="card"><h2>단계별 체크리스트</h2><div id="revFix"></div></div>
@@ -1491,7 +1497,18 @@ const CORE=[
   '같은 지역이라도 계약일이 다르면 날마다 따로 방문 → 동선 비효율',
   '같은 지역을 모아서 가면 효율은 오르지만, 그사이 고객이 기다려 주지 않을 수 있음',
   '방문 시점(다음 날·이틀 안 등)별 효과는 아직 모름 → 테스트로 기준을 찾아 가이드화']}];
+// 앱 개선 요청 (현장 공통 사항·센터장 회의 자료에서 정리, ★ = 회의 자료 상위 3개). 발표에서는 "12월 개선 계획이 있어 상세히 다루지 않음"으로 넘어감
+const APP_REQ=[
+ ['글씨 · 버튼 크게 (시니어용 화면)','9가구',1],
+ ['말이 끝나면 자동으로 넘어가기 ("제출" 단계 간소화)','6가구',1],
+ ['레슨 시작까지 단계 줄이기','',1],
+ ['대화 중 뒤로 가기 찾기 쉽게','3가구'],
+ ['관심사 · 직업 항목 추가 (종교, 주부 등)','4가구'],
+ ['이용권 자동 등록 안정화 (일본어 기기) · 번호 0과 O 구분','2가구'],
+ ['발음 인식 기준 완화','2건'],
+ ['회원가입 아이디 중복 오류 확인','']];
 function renderCore(){
+  if($('revApp'))$('revApp').innerHTML=`<p class="key-sub">12월 앱 개선 계획 참고용 · 현장에서 나온 요청 정리 (★ 우선 요청)</p><ul class="app-l">${APP_REQ.map(([t,c,s])=>`<li${s?' class="top"':''}><span>${s?'★ ':''}${t}</span>${c?`<em>${c}</em>`:''}</li>`).join('')}</ul>`;
   if($('revCore'))$('revCore').innerHTML=CORE.map((c,i)=>`<div class="core"><div class="core-l"><span class="core-n">${i+1}</span><div><div class="core-s">${c.s}</div><div class="core-w">${c.w}</div></div></div>
     <ul>${c.pts.map(p=>`<li>${p}</li>`).join('')}</ul></div>`).join('')
     +`<div class="core-end">고객 경험 · 케어 퀄리티 · 케어 최적화 — 세 가지가 갖춰져야 정규 운영 가능</div>`;
