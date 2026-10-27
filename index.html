@@ -210,6 +210,7 @@ body:not(.authed) .auth-only{display:none!important}
 .core ul{margin:0;padding-left:18px;font-size:14px;line-height:1.7;text-wrap:pretty}
 .core li{margin:2px 0}.core li::marker{color:var(--accent)}
 .core li small{display:block;font-size:12.5px;color:var(--text-2)}
+.core li small span{display:block;padding-left:12px;position:relative;margin-top:2px}.core li small span::before{content:"·";position:absolute;left:2px;color:var(--accent);font-weight:800}
 .core-end{margin-top:10px;padding:14px 18px;border-radius:12px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;font-size:15.5px;font-weight:800;text-align:center;word-break:keep-all}
 .base-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin:6px 0 0;padding:0;list-style:none}
 .base-g li{padding:10px 14px;border-radius:10px;background:var(--accent-soft);font-size:13.5px;line-height:1.5;text-wrap:balance}
@@ -1466,10 +1467,10 @@ const CORE=[
   '고객이 말한 순간 옆에서 바로 호응 (외국인과 영어로 처음 대화해 본 경험)',
   '고객에게 자신감을 심어주는 것이 케어의 기본 베이스']},
  {s:'케어 퀄리티',w:'디테일과 방문자 역량',pts:[
-  '처음에는 방문자에게도 의심으로 시작 → 설명이 이어지면서 신뢰도가 올라가고 태도가 변함',
-  '정해진 매뉴얼 없이 방문했고, 현장에서 나온 디테일 (방문자들이 각자 같은 방식으로 진행)<small>글씨 크기 먼저 키우기 · 화면 꺼짐 30초 → 길게 또는 안 꺼지게(꺼지면 고장으로 오해) · 인터넷 연결이 왜 필요한지(AI와 대화) 먼저 설명 · 회원가입 입력 방식 통일 · 레벨테스트 건너뛰고 자기소개로 바로</small>',
-  '방문자의 센스 필요 — 노년층 대상 경청, 친밀감 형성',
-  '정규 운영한다면 방문케어 퀄리티가 중요 → 위 디테일을 처음부터 표준으로']},
+  '고객은 처음에 방문자도 의심함 → 방문자가 설명을 이어 가자 신뢰가 생기고 태도가 바뀜',
+  '정해진 매뉴얼 없이 방문했지만, 방문자들이 현장에서 찾은 방법이 서로 같았음<small><span>글씨 크기부터 키움</span><span>화면 꺼짐 시간을 30초보다 길게, 또는 안 꺼지게 바꿈 (화면이 꺼지면 고객이 고장으로 오해함)</span><span>인터넷 연결이 왜 필요한지(AI와 대화하려면 필요) 먼저 설명</span><span>회원가입 입력 방식을 방문자끼리 통일</span><span>레벨테스트는 건너뛰고 자기소개부터 시작</span></small>',
+  '방문자에게는 센스가 필요함 — 노년층 고객의 말을 잘 들어 주고 친밀감을 쌓는 것',
+  '방문케어를 정규 운영한다면 방문 품질이 중요함 → 위 방법들을 처음부터 표준 매뉴얼로 정리 필요']},
  {s:'케어 최적화',w:'운영 효율과 고객 만족의 균형',pts:[
   '이번 테스트는 당일 계약을 취합해 연락하고 다음 날 방문함',
   '같은 지역이라도 계약일이 다르면 날마다 따로 방문 → 동선 비효율',
