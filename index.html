@@ -559,7 +559,7 @@ main{word-break:keep-all;overflow-wrap:break-word}
   </div>
   <p class="note"><b>평소엔 기본값 그대로 두면 됩니다.</b> 바꾸면 바로 반영되고 이 브라우저에 저장됩니다.<br>
   · <b>판정 대기</b> (기본 0): 최근 계약은 아직 반품이 덜 들어와 취소율이 낮게 보입니다. 최종 결론을 낼 때 14로 두면 배송 후 14일 지난 건만 비교합니다<br>
-  · <b>대조군 기간 여유</b> (기본 30): 방문군 신청 기간 앞뒤 N일의 택배 계약을 비교 대상으로 씀. 너무 좁으면 표본이 적고, 너무 넓으면 시기(프로모션·계절) 차이가 섞입니다<br>
+  · <b>대조군 기간 여유</b> (기본 0 = 방문 대상자 계약일 첫날~마지막 날과 같은 기간): 방문군 신청 기간 앞뒤 N일의 택배 계약을 비교 대상으로 씀. 너무 좁으면 표본이 적고, 너무 넓으면 시기(프로모션·계절) 차이가 섞입니다<br>
   · <b>기준일</b> (기본 빈칸 = 파일 최신일): 판정 대기를 켰을 때 "배송 후 N일"을 어느 날짜에서 셀지 정함. 판정 대기가 0이면 영향 없음<br>
   · <b>같은 권역으로 제한</b>: 방문군이 특정 권역(예: 수도권)에만 있을 때 켜면, 대조군도 그 권역 계약만 써서 지역 차이를 없앱니다</p>
   <div class="dlg-f"><button class="btn primary" data-close>닫기</button></div>
@@ -583,7 +583,7 @@ const CT={orderKey:['주문키',2],custKey:['고객키',3],manager:['담당자',
   term:['철회/해지 구분',62],birth:['신용정보조회생년월일(계약자)',55],ageTxt:['통화연령층',67],brand:['브랜드명',71]};
 // 파일 미업로드 시 기준선: 2026년 6~9월 톡이즈 계약 실측 (권역|연령대 → [계약, 반품])
 const BASE={months:4,label:'내장 기준선 (26년 6~9월 실측)',data:{"수도권|0":[146,6],"제주|75":[5,1],"부울경|60":[45,4],"수도권|70":[347,33],"수도권|65":[317,28],"호남|65":[52,4],"수도권|60":[151,11],"수도권|75":[306,52],"대구경북|70":[43,1],"부울경|65":[92,12],"충청|70":[61,4],"부울경|75":[65,9],"부울경|70":[84,14],"수도권|80":[258,47],"충청|65":[72,6],"호남|0":[27,0],"부울경|80":[51,12],"충청|80":[40,9],"충청|75":[45,5],"제주|0":[7,0],"호남|80":[31,7],"강원|75":[8,2],"대구경북|80":[30,6],"부울경|0":[43,2],"강원|65":[26,2],"호남|70":[44,6],"호남|75":[36,9],"충청|0":[38,3],"충청|60":[37,2],"대구경북|75":[24,4],"대구경북|65":[46,2],"제주|70":[10,1],"대구경북|0":[26,3],"호남|60":[28,3],"대구경북|60":[26,1],"강원|70":[22,1],"강원|80":[14,4],"강원|0":[8,0],"강원|60":[9,1],"제주|60":[5,0],"제주|65":[5,2],"제주|80":[5,0]}};
-const DEFAULTS={waitDays:0,padDays:30,asOf:'',sameRegion:false,
+const DEFAULTS={waitDays:0,padDays:0,asOf:'',sameRegion:false,
   profit:1000000,careCost:20000,careReplaced:true,visitCost:50000,testFixed:0,
   cmpMetric:'init',expAge:'75',coverage:100,relRed:'',salary:3000000,burden:20,carCost:700000,etcCost:100000,
   capMetro:5,capLocal:3.5,workDays:21,util:80,hqCost:0,outCost:25000,expMode:"piece"};
@@ -598,6 +598,8 @@ S.confirmed={...(S.confirmed||{})};
 // 설정 v2 (2026-10-13): 확장 기본 = 건당 지급 25,000원. 예전에 저장된 직고용/외주 6만원 설정은 새 기본값으로 바꿈
 // 설정 v3: 테스트 방문 1건 비용 8만 → 2.5만
 if((S.ver||0)<4){if((S.ver||0)<2){S.expMode=DEFAULTS.expMode;S.outCost=DEFAULTS.outCost}S.visitCost=DEFAULTS.visitCost;S.ver=4;try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
+// 설정 v5 (2026-10-28 사용자 요청): 택배 대조군 = 방문 대상자 계약일 첫날~마지막 날(여유 0일) — 발표에서 "동일 기간"이라고 설명함
+if((S.ver||0)<5){S.padDays=0;S.ver=5;try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
 function saveSettings(){try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
 function confirmProv(k,on=true){if(on)S.confirmed[k]=true;else delete S.confirmed[k];saveSettings();render()}
 
@@ -1352,7 +1354,7 @@ function renderHero(A){
   const W=[['택배 대조군',A.wmC],['방문설치',A.wmV]];
   $('wmTable').innerHTML=A.M.init.avail?`<table><tr><th>구분</th><th>최초 계약수</th><th>배송전취소</th><th>배송후취소</th><th>취소수</th><th>취소율<br><span style="font-weight:400">(÷최초계약)</span></th><th>배송된 계약</th><th>배송후 취소율<br><span style="font-weight:400">(÷배송된 계약)</span></th></tr>${W.map(([l,w])=>{const r=(a,b)=>b?pct(a/b,2):'–';
       return`<tr><td>${l}</td><td>${num(w.n)}</td><td>${num(w.pre)}</td><td>${num(w.post)}</td><td>${num(w.tot)}</td><td>${X.key==='init'?'<b>':''}${r(w.tot,w.n)}${X.key==='init'?'</b>':''}</td><td>${num(w.ship)}</td><td>${X.key==='post'?'<b>':''}${r(w.post,w.ship)}${X.key==='post'?'</b>':''}</td></tr>`}).join('')}</table>
-    <p class="note">연령보정 전 숫자 · 택배 대조군 = ${CMP_FIX?"계약일 "+CMP_FIX.map(x=>x.replace(/-/g,".")).join(" ~ "):"방문군 신청일 ±"+S.padDays+"일"}</p>`
+    <p class="note">연령보정 전 숫자 · 택배 대조군 = ${CMP_FIX?"계약일 "+CMP_FIX.map(x=>x.replace(/-/g,".")).join(" ~ "):+S.padDays?"방문군 신청일 ±"+S.padDays+"일":"방문 대상자와 같은 계약일 기간"}</p>`
     :'<p class="note" style="margin:0">일마감 신청자관리 파일이 없어 표를 만들 수 없습니다.</p>';
 }
 const bandLabelMin=a=>a?`${a}세 이상`:'전 연령';
@@ -1406,7 +1408,7 @@ function renderCompare(A){
     const diff=Vd?`<tr><td>차이 (택배 − 방문)</td><td></td>${cols.map((_,i)=>{const v=Sd.n&&Vd.n?dS(Sd.c[i]/Sd.n,Vd.c[i]/Vd.n):null;return`<td class="${cls(v)}">${pp(v)}</td>`}).join('')}<td class="${cls(dS(Sd.tot/Sd.n,Vd.tot/Vd.n))}"><b>${pp(dS(Sd.tot/Sd.n,Vd.tot/Vd.n))}</b></td></tr>`:'';
     $('daysTable').innerHTML=`<table><tr><th></th><th>${hasInit?'최초계약':'배송 계약'}</th>${cols.map(c=>`<th>${c==='배취'?'배송전취소':'배송 후 '+c}</th>`).join('')}<th>합계</th></tr>
       ${row('택배',Sd)}${Vd?row('방문설치',Vd):''}${diff}</table>
-      <p class="note">각 칸 = 그 구간 취소 ÷ ${hasInit?'최초계약':'배송된 계약'} (구간을 더하면 합계 취소율) · 배송 후 일수 = 배송일 → 반품일, 당일 반품은 1~3일에 포함 · 연령보정 전 · 택배 = ${CMP_FIX?"계약일 "+CMP_FIX.map(x=>x.replace(/-/g,".")).join(" ~ "):"방문군 신청일 ±"+S.padDays+"일"} 대조군${hasInit?'':' · 일마감 파일이 없어 배송전취소 칸 없음'}${Sd.nd||(Vd&&Vd.nd)?` · 배송일 없는 반품 ${Sd.nd+(Vd?Vd.nd:0)}건은 합계에만 포함`:''}${Vd&&Vd.n<100?' · 방문 건수가 적어 구간별 차이는 참고용':''}</p>`;
+      <p class="note">각 칸 = 그 구간 취소 ÷ ${hasInit?'최초계약':'배송된 계약'} (구간을 더하면 합계 취소율) · 배송 후 일수 = 배송일 → 반품일, 당일 반품은 1~3일에 포함 · 연령보정 전 · 택배 = ${CMP_FIX?"계약일 "+CMP_FIX.map(x=>x.replace(/-/g,".")).join(" ~ "):+S.padDays?"방문군 신청일 ±"+S.padDays+"일":"방문 대상자와 같은 계약일 기간"} 대조군${hasInit?'':' · 일마감 파일이 없어 배송전취소 칸 없음'}${Sd.nd||(Vd&&Vd.nd)?` · 배송일 없는 반품 ${Sd.nd+(Vd?Vd.nd:0)}건은 합계에만 포함`:''}${Vd&&Vd.n<100?' · 방문 건수가 적어 구간별 차이는 참고용':''}</p>`;
   }
   // 표
   $('cmpTable').innerHTML=`<table><tr><th>연령대</th><th>택배 건수</th><th>택배 취소율</th><th>방문 건수</th><th>방문 취소</th><th>방문 취소율</th><th>차이</th></tr>${BANDS.map((b,i)=>{
