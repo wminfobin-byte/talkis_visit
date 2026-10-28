@@ -218,6 +218,10 @@ main{word-break:keep-all;overflow-wrap:break-word}
 .vc-g{font-size:12.5px;font-weight:700;color:var(--text);min-width:96px}
 .vc-chip{font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:5px 12px}.vc-chip b{color:var(--accent);margin-left:2px}
 @media(max-width:760px){.vc-grid{grid-template-columns:1fr}}
+.gn-eq{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 14px;font-size:14.5px}
+.gn-eq span{background:var(--surface);border-radius:10px;padding:8px 14px;box-shadow:var(--shadow)}.gn-eq b{color:var(--accent);margin-left:6px}
+.gn-eq i{font-style:normal;color:var(--text-2);font-weight:700}.gn-eq .gn-res{background:var(--accent);color:#fff}.gn-eq .gn-res b{color:#fff}
+.gn-note{margin:10px 0 0;font-size:12.5px;color:var(--text-2)}
 .chap{display:flex;align-items:baseline;gap:10px;margin:30px 2px 10px;padding-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--muted) 35%,transparent);word-break:keep-all}
 .chap b{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.5px;white-space:nowrap}
 .chap span{font-size:17px;font-weight:800;color:var(--text)}
@@ -347,6 +351,7 @@ main{word-break:keep-all;overflow-wrap:break-word}
   <div class="card"><h2 id="daysTitle">기간별 취소율 — 택배 vs 방문설치</h2><div class="chartbox"><canvas id="cDays"></canvas></div>
     <div class="tw" id="daysTable" style="margin-top:12px"></div></div>
   <div class="card"><h2>취소 사유</h2><div id="revCancel"></div></div>
+  <div class="card key"><div class="key-eye">확대 효과 (추정)</div><h2>방문케어 확대 시 영업이익 개선</h2><div id="gainCard"></div></div>
   <div class="chap"><b>2 핵심</b><span>정규 운영을 위한 세 가지</span><em>고객 경험 · 케어 퀄리티 · 케어 최적화</em></div>
   <div class="card key"><div class="key-eye">핵심</div><h2>세 가지가 갖춰져야 정규 운영할 수 있음</h2><div id="revCore"></div></div>
   <div class="chap"><b>3 운영 체크리스트</b><span>방문 전 · 중 · 후 표준 절차</span><em>정규 운영 시 표준 매뉴얼 초안</em></div>
@@ -1172,7 +1177,7 @@ function expansion(A,R,minAge){
 function kpi(l,v,d,dotVar){return`<div class="kpi"><div class="l">${dotVar?`<span class="dot" style="background:var(${dotVar})"></span>`:''}${l}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`}
 function render(){
   const A=analyze(),R=roiCalc(A),E=expansion(A,R,+S.expAge);
-  renderProv();renderSummary(A,R,E);renderHero(A);renderSigExplain(A);renderCompare(A);renderRoi(A,R);renderExp(A,R,E);renderGuide(A,E);renderLog(A);renderReview(A);
+  renderProv();renderSummary(A,R,E);renderHero(A);renderSigExplain(A);renderCompare(A);renderRoi(A,R);renderExp(A,R,E);renderGuide(A,E);renderLog(A);renderReview(A);renderGain(A);
   refreshStatus();renderLastUpd();
 }
 // 헤더: 신청자 일마감 최종 업데이트 yyyy-mm-dd(요일) h:mm
@@ -1298,6 +1303,23 @@ function renderSigExplain(A){
   계산: 오차범위 = 90% 신뢰구간(Clopper-Pearson, 위·아래 각각 단측 95%), 좁게 잡은 최대치 = 단측 80% 신뢰상한. "최대치 &lt; 택배"는 단측 이항검정 p &lt; 0.05와 같은 기준입니다${X.p!=null?` (지금 p = ${pct(X.p,1)})`:''}.</p>`;
 }
 // 핵심 비교: 택배(연령보정) vs 방문설치 취소율을 가장 크게
+// 확대 시 영업이익 개선 (2026-10-28 사용자 요청): 테스트 취소율 차이 × 계약 1건 영업이익(S.profit) × 월 계약(기준일 이전 최근 4개 완결 월 평균)
+function renderGain(A){
+  const el=$('gainCard');if(!el)return;const X=curMetric(A);
+  const d=X.exp!=null&&X.vRate!=null?X.exp-X.vRate:null;
+  if(d==null||!X.vN){el.innerHTML='<p class="muted">방문 데이터가 들어오면 계산합니다.</p>';return}
+  const ao=asOfDate(),cur=ao?ao.getFullYear()+'-'+String(ao.getMonth()+1).padStart(2,'0'):'9999-99';
+  const pool=contracts.filter(c=>c.initOk&&c.apply&&c.apply.slice(0,7)<cur);
+  const months=[...new Set(pool.map(c=>c.apply.slice(0,7)))].sort().slice(-4);
+  const inM=pool.filter(c=>months.includes(c.apply.slice(0,7)));
+  const per=d*S.profit,cost=+S.visitCost||0,pb=betterProb(X);
+  const rows=[[75,'75세 이상'],[70,'70세 이상'],[0,'전 연령']].map(([a,l])=>{
+    const vol=inM.filter(c=>a===0||(c.age??0)>=a).length/(months.length||1),def=vol*d;
+    return`<tr><td>${l}</td><td>${Math.round(vol).toLocaleString()}건</td><td>${def.toFixed(0)}건</td><td><b>${man(Math.round(def*S.profit/1e4)*1e4)}원</b></td><td><b>${man(def*S.profit*12)}원</b></td><td>${man((per-cost)*vol*12)}원</td></tr>`});
+  el.innerHTML=`<div class="gn-eq"><span>취소율 차이<b>${pp(d)}</b></span><i>×</i><span>계약 1건 영업이익<b>${man(S.profit)}원</b></span><i>=</i><span class="gn-res">방문 1건당 약<b>${man(per)}원</b></span></div>
+  <div class="tw"><table><tr><th>확대 대상</th><th>월 계약</th><th>월 방어</th><th>월 영업이익 개선</th><th>연간</th><th>연간 (방문비 ${man(cost)}원 차감)</th></tr>${rows.join('')}</table></div>
+  <p class="gn-note">월 계약 = ${months.length?months[0].replace('-','.')+'~'+(+months.at(-1).slice(5))+'월':''} 톡이즈 최초계약 월평균. 테스트(방문 ${X.vN}건)의 취소율 차이를 그대로 적용한 추정${pb!=null?` · 방문이 나을 확률 약 ${Math.round(pb*100)}%`:''}</p>`;
+}
 function renderHero(A){
   renderMetricBar(A);
   const B=baseline(),X=curMetric(A);
