@@ -622,8 +622,9 @@ function toDate(v){
 }
 const ymd=d=>d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
 const pct=(x,dg=1)=>x==null||isNaN(x)?'–':(x*100).toFixed(dg)+'%';
-// 택배 기대취소율(연령보정) 표시용: 소수 둘째 자리 버림 — 반올림하면 26.06%→26.1%, 방문 16.13%→16.1%인데 차이는 9.93%p→9.9%p라 화면 숫자가 안 맞아 보임 (2026-10-28 사용자 요청)
-const pctE=x=>x==null||isNaN(x)?'–':(Math.floor(x*1000+1e-9)/10).toFixed(1)+'%';
+// 화면 차이 = 화면에 보이는 두 비율(소수 첫째 자리 반올림)의 차 — 원값 차를 반올림하면 26.1%−16.1%가 9.9%p로 보이는 문제 (2026-10-28 사용자 요청). 판정·확률 계산은 원값 사용
+const r1=x=>x==null||isNaN(x)?null:+(x*100).toFixed(1)/100;   // pct()와 같은 반올림
+const dS=(a,b)=>a==null||b==null||isNaN(a)||isNaN(b)?null:Math.round((r1(a)-r1(b))*1000)/1000;
 const pp=x=>x==null||isNaN(x)?'–':(x>=0?'':'−')+Math.abs(x*100).toFixed(1)+'%p';
 const won=x=>x==null||isNaN(x)?'–':(x<0?'−':'')+Math.round(Math.abs(x)).toLocaleString('ko-KR')+'원';
 const man=x=>{if(x==null||isNaN(x))return'–';const a=Math.abs(x),s=x<0?'−':'';return a>=1e8?s+(a/1e8).toFixed(2)+'억':s+(a/1e4).toLocaleString('ko-KR',{maximumFractionDigits:1})+'만'};
@@ -698,6 +699,8 @@ function contractKind(folder,name){
 let src=[];        // [{name,kind,mod,rows}] 파일별 톡이즈 슬림 행
 let wmSrc=[];      // wm_dash 취소율 탭에 올린 월간누적 (저장하지 않고 매번 wm_dash 저장소에서 읽음)
 let cinfo={daily:0,month:0,unknown:0,dailyRet:0};
+// 택배 대조군 계약일(신청일) 고정 구간 — null이면 방문군 신청일 ±padDays (2026-10-28 사용자 요청으로 발표 기준 기간 고정)
+const CMP_FIX=null;   // 2026-10-28 고정했다가 사용자 요청으로 해제 — 방문군 신청일 ±padDays, 새 데이터 들어오면 갱신
 let period=null;   // 상태줄 집계 기간 [시작,끝] = 비교에 들어간 계약(방문군+대조군) 신청일 최소~최대
 // wm_dash와 talkis_visit은 같은 출처(wminfobin-byte.github.io)라 IndexedDB를 같이 쓴다.
 // wm_dash 취소율 탭 DB(cancelDashboard/files)의 '신청자(전체)' = type 'app' 파일을 월간누적으로 읽는다.
@@ -1097,7 +1100,9 @@ function analyze(){
     let pool=all;
     if(V.length){
       // 대조군 = 방문군 신청일 ±N일 (wm_dash 취소율은 신청일 축)
-      const t=V.map(c=>toDate(c.apply).getTime()),pad=(+S.padDays||0)*DAY,lo=Math.min(...t)-pad,hi=Math.max(...t)+pad;
+      const t=V.map(c=>toDate(c.apply).getTime()),pad=(+S.padDays||0)*DAY;
+      // 2026-10-28 사용자 요청: 비교 기간 고정 — 끝이 방문군+30일(11/21)이라 새 계약이 들어올 때마다 대조군이 늘던 문제
+      const lo=CMP_FIX?toDate(CMP_FIX[0]).getTime():Math.min(...t)-pad,hi=CMP_FIX?toDate(CMP_FIX[1]).getTime():Math.max(...t)+pad;
       pool=pool.filter(c=>{const x=toDate(c.apply).getTime();return x>=lo&&x<=hi});
       if(S.sameRegion){const rs=new Set(V.map(c=>c.region));pool=pool.filter(c=>rs.has(c.region))}
     }
@@ -1127,7 +1132,7 @@ function analyze(){
     waiting:vRows.filter(x=>x.st==='wait').length,missing:vRows.filter(x=>x.st==='miss').length,pend:vRows.filter(x=>x.st==='pend').length};
 }
 function roiCalc(A){
-  const base=A.exp,d=base!=null&&A.vRate!=null?base-A.vRate:null,n=A.vN;
+  const base=A.exp,d=base!=null&&A.vRate!=null?dS(base,A.vRate):null,n=A.vN;
   const costs=A.vRows.filter(x=>x.c&&A.V.includes(x.c)).map(x=>x.v.cost);
   const hasCost=costs.length&&costs.every(x=>x>0);
   const perVisit=hasCost?costs.reduce((a,b)=>a+b,0)/costs.length:+S.visitCost;
@@ -1253,7 +1258,7 @@ function renderSummary(A,R,E){
     t='방문설치 테스트 데이터 대기 중';
     items=[`택배 취소율 ${contracts.length?pct(rateAll(X)):`${pct(segStats(E.B,0).rate)} (${E.B.label})`} — ② 방문 대상자를 입력하면 비교가 시작됩니다.`];
   }else{
-    const line=`방문 ${X.vN}명 중 ${X.vR}명 취소(${pct(X.vRate)}) · 같은 연령 구성의 택배라면 ${pctE(X.exp)} · 차이 <b>${pp(X.exp-X.vRate)}</b>`;
+    const line=`방문 ${X.vN}명 중 ${X.vR}명 취소(${pct(X.vRate)}) · 같은 연령 구성의 택배라면 ${pct(X.exp)} · 차이 <b>${pp(dS(X.exp,X.vRate))}</b>`;
     if(X.vN<30){cls='warn';t=`진행 중 — 방문 ${X.vN} / 30건`;if(X.vN)items.push(line)}
     // 30건 이상: 판정 배너("오차범위 이내 — 단정할 수 없습니다" 등)는 두지 않는다(2026-10-26 사용자 요청 — 테스트 종료).
     // 숫자는 히어로, 오차범위 설명은 접힌 "판정 기준 · 신뢰도" 카드에 있음. 아래 데이터 확인 경고만 남김.
@@ -1275,7 +1280,7 @@ function renderSigExplain(A){
   const flipN=Math.max(0,Math.ceil(p0*n-X.vR-1e-9));
   const ns=[...new Set([30,50,100,200,Math.max(n,30)])].sort((a,b)=>a-b);
   const rows=ns.map(m=>{const k=sigNeed(m,p0),r=k=>k<0?'불가':`${k}건 이하 <span style="color:var(--text-2)">(${pct(k/m)})</span>`;
-    return`<tr${m===n?' style="font-weight:700;background:var(--visit-soft)"':''}><td>${m}건${m===n?' (지금)':''}</td><td>${Math.round(m*p0)}건 (${pctE(p0)})</td><td>${r(k.k05)}</td><td>${r(k.k20)}</td></tr>`}).join('');
+    return`<tr${m===n?' style="font-weight:700;background:var(--visit-soft)"':''}><td>${m}건${m===n?' (지금)':''}</td><td>${Math.round(m*p0)}건 (${pct(p0)})</td><td>${r(k.k05)}</td><td>${r(k.k20)}</td></tr>`}).join('');
   // 범위 막대: 방문 실제 → 최대치, 택배 기준선
   const ax=Math.max(u95,p0)*1.15,L=x=>(x/ax*100).toFixed(1)+'%';
   const bar=`<div style="position:relative;height:58px;margin:18px 0 8px">
@@ -1286,12 +1291,12 @@ function renderSigExplain(A){
     <div style="position:absolute;top:0;left:${L(X.vRate)};transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--s-visit);font-weight:700">방문 실제 ${pct(X.vRate)}</div>
     <div style="position:absolute;top:38px;left:${L(u95)};transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--s-visit)">최대 ${pct(u95)}</div>
     <div style="position:absolute;top:10px;left:${L(p0)};width:3px;height:34px;background:var(--s-ship)"></div>
-    <div style="position:absolute;top:38px;left:${L(p0)};transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--s-ship);font-weight:700">택배 ${pctE(p0)}</div></div>`;
+    <div style="position:absolute;top:38px;left:${L(p0)};transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--s-ship);font-weight:700">택배 ${pct(p0)}</div></div>`;
   const brief=n<30?`아직 방문 ${n}건이라 판정 전입니다(30건부터 판정).`
     :`방문 ${n}명 중 ${X.vR}명이 취소해 <b>${pct(X.vRate)}</b>입니다. 같은 연령의 택배 고객이었다면 약 <b>${Math.round(expN)}명</b>이 취소했을 것으로, ${gapN>0?`<b>${gapN.toFixed(0)}명 정도 차이</b>입니다`:'방문이 더 많이 취소했습니다'}. `
-     +(v.t==='오차범위 밖'?`오차범위(${pct(l95)} ~ ${pct(u95)})의 최대치도 택배(${pctE(p0)})보다 낮아 <b>오차범위 밖</b> — 방문설치 효과로 볼 수 있습니다.`
-      :v.t==='오차범위 경계'?`오차범위(${pct(l95)} ~ ${pct(u95)}) 안에 택배(${pctE(p0)})가 들어가지만, 오차범위를 좁게 잡으면(최대 ${pct(u80)}) 밖이라 <b>오차범위 경계</b> — 건수를 늘려 재확인이 필요합니다.`
-      :`${n}명 규모에선 ${flipN}명만 더 취소했어도 택배와 같아지는 차이라, 방문 취소율의 오차범위는 ${pct(l95)} ~ ${pct(u95)}이고 택배 ${pctE(p0)}가 이 안에 들어갑니다(<b>오차범위 이내</b>).`)
+     +(v.t==='오차범위 밖'?`오차범위(${pct(l95)} ~ ${pct(u95)})의 최대치도 택배(${pct(p0)})보다 낮아 <b>오차범위 밖</b> — 방문설치 효과로 볼 수 있습니다.`
+      :v.t==='오차범위 경계'?`오차범위(${pct(l95)} ~ ${pct(u95)}) 안에 택배(${pct(p0)})가 들어가지만, 오차범위를 좁게 잡으면(최대 ${pct(u80)}) 밖이라 <b>오차범위 경계</b> — 건수를 늘려 재확인이 필요합니다.`
+      :`${n}명 규모에선 ${flipN}명만 더 취소했어도 택배와 같아지는 차이라, 방문 취소율의 오차범위는 ${pct(l95)} ~ ${pct(u95)}이고 택배 ${pct(p0)}가 이 안에 들어갑니다(<b>오차범위 이내</b>).`)
      +(betterProb(X)!=null?` 이 범위 안에서 따져 보면 <b>방문이 택배보다 나을 확률은 약 ${Math.round(betterProb(X)*100)}%</b>입니다.`:'');
   $('sigExplain').innerHTML=`<div style="background:var(--visit-soft);border-radius:10px;padding:12px 16px;margin-top:0"><div style="font-size:12px;color:var(--text-2);margin-bottom:4px">브리핑 한 줄</div>${brief}</div>
   ${n>=30?bar:''}
@@ -1308,7 +1313,7 @@ function renderSigExplain(A){
 // 확대 시 영업이익 개선 (2026-10-28 사용자 요청): 테스트 취소율 차이 × 계약 1건 영업이익(S.profit) × 월 계약(기준일 이전 최근 4개 완결 월 평균)
 function renderGain(A){
   const el=$('gainCard');if(!el)return;const X=curMetric(A);
-  const d=X.exp!=null&&X.vRate!=null?X.exp-X.vRate:null;
+  const d=X.exp!=null&&X.vRate!=null?dS(X.exp,X.vRate):null;
   if(d==null||!X.vN){el.innerHTML='<p class="muted">방문 데이터가 들어오면 계산합니다.</p>';return}
   const ao=asOfDate(),cur=ao?ao.getFullYear()+'-'+String(ao.getMonth()+1).padStart(2,'0'):'9999-99';
   const pool=contracts.filter(c=>c.initOk&&c.apply&&c.apply.slice(0,7)<cur);
@@ -1327,13 +1332,13 @@ function poolRange(arr){const d=arr.map(c=>c.apply).filter(Boolean).sort();if(!d
 function renderHero(A){
   renderMetricBar(A);
   const B=baseline(),X=curMetric(A);
-  const has=X.vN>0,diff=has&&X.exp!=null?X.exp-X.vRate:null;
+  const has=X.vN>0,diff=has&&X.exp!=null?dS(X.exp,X.vRate):null;
   const dCol=diff==null?'var(--muted)':diff>0?'var(--good)':diff<0?'var(--bad)':'var(--text-2)';
   const base=contracts.length?rateAll(X):segStats(B,0).rate;
   const n=X.vN,pr=Math.min(1,n/30),pre=A.vRows.filter(x=>x.st==='pre').length;
   $('hero').innerHTML=`<div class="hero">
     <div class="side ship"><div class="l"><span class="dot" style="background:var(--s-ship)"></span>택배 취소율${has?' (연령보정)':''}</div>
-      <div class="big">${has?pctE(X.exp):pct(base)}</div>
+      <div class="big">${has?pct(X.exp):pct(base)}</div>
       <div class="d">${has?`택배 ${num(X.cN)}건 (계약일 ${poolRange(X.pool)}) · 보정 전 ${pct(X.cRate)}`:contracts.length?'톡이즈 계약 전체':B.label}</div></div>
     <div class="mid"><div class="d">차이</div><div class="diff" style="color:${dCol}">${diff==null?'vs':pp(diff)}</div>
       <div class="d">${sigLabel(X)}</div></div>
@@ -1347,7 +1352,7 @@ function renderHero(A){
   const W=[['택배 대조군',A.wmC],['방문설치',A.wmV]];
   $('wmTable').innerHTML=A.M.init.avail?`<table><tr><th>구분</th><th>최초 계약수</th><th>배송전취소</th><th>배송후취소</th><th>취소수</th><th>취소율<br><span style="font-weight:400">(÷최초계약)</span></th><th>배송된 계약</th><th>배송후 취소율<br><span style="font-weight:400">(÷배송된 계약)</span></th></tr>${W.map(([l,w])=>{const r=(a,b)=>b?pct(a/b,2):'–';
       return`<tr><td>${l}</td><td>${num(w.n)}</td><td>${num(w.pre)}</td><td>${num(w.post)}</td><td>${num(w.tot)}</td><td>${X.key==='init'?'<b>':''}${r(w.tot,w.n)}${X.key==='init'?'</b>':''}</td><td>${num(w.ship)}</td><td>${X.key==='post'?'<b>':''}${r(w.post,w.ship)}${X.key==='post'?'</b>':''}</td></tr>`}).join('')}</table>
-    <p class="note">연령보정 전 숫자 · 택배 대조군 = 방문군 신청일 ±${S.padDays}일</p>`
+    <p class="note">연령보정 전 숫자 · 택배 대조군 = ${CMP_FIX?"계약일 "+CMP_FIX.map(x=>x.replace(/-/g,".")).join(" ~ "):"방문군 신청일 ±"+S.padDays+"일"}</p>`
     :'<p class="note" style="margin:0">일마감 신청자관리 파일이 없어 표를 만들 수 없습니다.</p>';
 }
 const bandLabelMin=a=>a?`${a}세 이상`:'전 연령';
@@ -1398,14 +1403,14 @@ function renderCompare(A){
     mkChart('cDays',{type:'bar',data:{labels:cols,datasets:dsD},options:o2});
     const cell=(v,n)=>n?`${pct(v/n)}<div style="font-size:11px;color:var(--muted)">${num(v)}건</div>`:'–';
     const row=(l,d)=>`<tr><td>${l}</td><td>${num(d.n)}</td>${d.c.map(v=>`<td>${cell(v,d.n)}</td>`).join('')}<td><b>${cell(d.tot,d.n)}</b></td></tr>`;
-    const diff=Vd?`<tr><td>차이 (택배 − 방문)</td><td></td>${cols.map((_,i)=>{const v=Sd.n&&Vd.n?Sd.c[i]/Sd.n-Vd.c[i]/Vd.n:null;return`<td class="${cls(v)}">${pp(v)}</td>`}).join('')}<td class="${cls(Sd.tot/Sd.n-Vd.tot/Vd.n)}"><b>${pp(Sd.tot/Sd.n-Vd.tot/Vd.n)}</b></td></tr>`:'';
+    const diff=Vd?`<tr><td>차이 (택배 − 방문)</td><td></td>${cols.map((_,i)=>{const v=Sd.n&&Vd.n?dS(Sd.c[i]/Sd.n,Vd.c[i]/Vd.n):null;return`<td class="${cls(v)}">${pp(v)}</td>`}).join('')}<td class="${cls(dS(Sd.tot/Sd.n,Vd.tot/Vd.n))}"><b>${pp(dS(Sd.tot/Sd.n,Vd.tot/Vd.n))}</b></td></tr>`:'';
     $('daysTable').innerHTML=`<table><tr><th></th><th>${hasInit?'최초계약':'배송 계약'}</th>${cols.map(c=>`<th>${c==='배취'?'배송전취소':'배송 후 '+c}</th>`).join('')}<th>합계</th></tr>
       ${row('택배',Sd)}${Vd?row('방문설치',Vd):''}${diff}</table>
-      <p class="note">각 칸 = 그 구간 취소 ÷ ${hasInit?'최초계약':'배송된 계약'} (구간을 더하면 합계 취소율) · 배송 후 일수 = 배송일 → 반품일, 당일 반품은 1~3일에 포함 · 연령보정 전 · 택배 = 방문군 신청일 ±${S.padDays}일 대조군${hasInit?'':' · 일마감 파일이 없어 배송전취소 칸 없음'}${Sd.nd||(Vd&&Vd.nd)?` · 배송일 없는 반품 ${Sd.nd+(Vd?Vd.nd:0)}건은 합계에만 포함`:''}${Vd&&Vd.n<100?' · 방문 건수가 적어 구간별 차이는 참고용':''}</p>`;
+      <p class="note">각 칸 = 그 구간 취소 ÷ ${hasInit?'최초계약':'배송된 계약'} (구간을 더하면 합계 취소율) · 배송 후 일수 = 배송일 → 반품일, 당일 반품은 1~3일에 포함 · 연령보정 전 · 택배 = ${CMP_FIX?"계약일 "+CMP_FIX.map(x=>x.replace(/-/g,".")).join(" ~ "):"방문군 신청일 ±"+S.padDays+"일"} 대조군${hasInit?'':' · 일마감 파일이 없어 배송전취소 칸 없음'}${Sd.nd||(Vd&&Vd.nd)?` · 배송일 없는 반품 ${Sd.nd+(Vd?Vd.nd:0)}건은 합계에만 포함`:''}${Vd&&Vd.n<100?' · 방문 건수가 적어 구간별 차이는 참고용':''}</p>`;
   }
   // 표
   $('cmpTable').innerHTML=`<table><tr><th>연령대</th><th>택배 건수</th><th>택배 취소율</th><th>방문 건수</th><th>방문 취소</th><th>방문 취소율</th><th>차이</th></tr>${BANDS.map((b,i)=>{
-    const vn=X.vb[b.k].n,vr=X.vb[b.k].r,vrt=vn?vr/vn:null,diff=vrt!=null&&shipRates[i]!=null?shipRates[i]-vrt:null;
+    const vn=X.vb[b.k].n,vr=X.vb[b.k].r,vrt=vn?vr/vn:null,diff=vrt!=null&&shipRates[i]!=null?dS(shipRates[i],vrt):null;
     return`<tr><td>${b.l}</td><td>${num(shipN[i])}</td><td>${pct(shipRates[i])}</td><td>${vn||'–'}</td><td>${vn?vr:'–'}</td><td>${pct(vrt)}</td><td class="${cls(diff)}">${pp(diff)}</td></tr>`}).join('')}</table>
     ${useBase?`<p class="note">신청자관리 파일 미업로드 — ${B.label} 기준으로 표시 중</p>`:''}`;}
 function segBand(B,k){let n=0,r=0;for(const[key,[a,b]]of Object.entries(B.data)){if(+key.split('|')[1]===k){n+=a;r+=b}}return{n,r}}
@@ -1419,7 +1424,7 @@ function renderRoi(A,R){
     kpi('순이익',`<span class="${cls(R.net)}">${won(R.net)}</span>`,'')+
     kpi('ROI',`<span class="${cls(R.roi)}">${pct(R.roi,0)}</span>`,`손익분기 방문단가 ${won(R.be)}`);
   $('roiFormula').textContent=R.d==null?'판정 가능한 방문 데이터가 생기면 계산 과정이 표시됩니다.':
-`줄어든 취소율 = 택배 기대취소율 ${pctE(A.exp)} − 방문 취소율 ${pct(A.vRate)} = ${pp(R.d)}
+`줄어든 취소율 = 택배 기대취소율 ${pct(A.exp)} − 방문 취소율 ${pct(A.vRate)} = ${pp(R.d)}
 방어 건수     = ${pp(R.d)} × ${R.n}건 = ${R.defended.toFixed(2)}건
 방어 이익     = ${R.defended.toFixed(2)}건 × ${won(S.profit)} = ${won(R.gain)}
 학습케어 절감 = ${won(R.care)} × ${R.n}건 = ${won(R.saving)}
