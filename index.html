@@ -622,6 +622,8 @@ function toDate(v){
 }
 const ymd=d=>d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';
 const pct=(x,dg=1)=>x==null||isNaN(x)?'–':(x*100).toFixed(dg)+'%';
+// 택배 기대취소율(연령보정) 표시용: 소수 둘째 자리 버림 — 반올림하면 26.06%→26.1%, 방문 16.13%→16.1%인데 차이는 9.93%p→9.9%p라 화면 숫자가 안 맞아 보임 (2026-10-28 사용자 요청)
+const pctE=x=>x==null||isNaN(x)?'–':(Math.floor(x*1000+1e-9)/10).toFixed(1)+'%';
 const pp=x=>x==null||isNaN(x)?'–':(x>=0?'':'−')+Math.abs(x*100).toFixed(1)+'%p';
 const won=x=>x==null||isNaN(x)?'–':(x<0?'−':'')+Math.round(Math.abs(x)).toLocaleString('ko-KR')+'원';
 const man=x=>{if(x==null||isNaN(x))return'–';const a=Math.abs(x),s=x<0?'−':'';return a>=1e8?s+(a/1e8).toFixed(2)+'억':s+(a/1e4).toLocaleString('ko-KR',{maximumFractionDigits:1})+'만'};
@@ -1251,7 +1253,7 @@ function renderSummary(A,R,E){
     t='방문설치 테스트 데이터 대기 중';
     items=[`택배 취소율 ${contracts.length?pct(rateAll(X)):`${pct(segStats(E.B,0).rate)} (${E.B.label})`} — ② 방문 대상자를 입력하면 비교가 시작됩니다.`];
   }else{
-    const line=`방문 ${X.vN}명 중 ${X.vR}명 취소(${pct(X.vRate)}) · 같은 연령 구성의 택배라면 ${pct(X.exp)} · 차이 <b>${pp(X.exp-X.vRate)}</b>`;
+    const line=`방문 ${X.vN}명 중 ${X.vR}명 취소(${pct(X.vRate)}) · 같은 연령 구성의 택배라면 ${pctE(X.exp)} · 차이 <b>${pp(X.exp-X.vRate)}</b>`;
     if(X.vN<30){cls='warn';t=`진행 중 — 방문 ${X.vN} / 30건`;if(X.vN)items.push(line)}
     // 30건 이상: 판정 배너("오차범위 이내 — 단정할 수 없습니다" 등)는 두지 않는다(2026-10-26 사용자 요청 — 테스트 종료).
     // 숫자는 히어로, 오차범위 설명은 접힌 "판정 기준 · 신뢰도" 카드에 있음. 아래 데이터 확인 경고만 남김.
@@ -1273,7 +1275,7 @@ function renderSigExplain(A){
   const flipN=Math.max(0,Math.ceil(p0*n-X.vR-1e-9));
   const ns=[...new Set([30,50,100,200,Math.max(n,30)])].sort((a,b)=>a-b);
   const rows=ns.map(m=>{const k=sigNeed(m,p0),r=k=>k<0?'불가':`${k}건 이하 <span style="color:var(--text-2)">(${pct(k/m)})</span>`;
-    return`<tr${m===n?' style="font-weight:700;background:var(--visit-soft)"':''}><td>${m}건${m===n?' (지금)':''}</td><td>${Math.round(m*p0)}건 (${pct(p0)})</td><td>${r(k.k05)}</td><td>${r(k.k20)}</td></tr>`}).join('');
+    return`<tr${m===n?' style="font-weight:700;background:var(--visit-soft)"':''}><td>${m}건${m===n?' (지금)':''}</td><td>${Math.round(m*p0)}건 (${pctE(p0)})</td><td>${r(k.k05)}</td><td>${r(k.k20)}</td></tr>`}).join('');
   // 범위 막대: 방문 실제 → 최대치, 택배 기준선
   const ax=Math.max(u95,p0)*1.15,L=x=>(x/ax*100).toFixed(1)+'%';
   const bar=`<div style="position:relative;height:58px;margin:18px 0 8px">
@@ -1284,12 +1286,12 @@ function renderSigExplain(A){
     <div style="position:absolute;top:0;left:${L(X.vRate)};transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--s-visit);font-weight:700">방문 실제 ${pct(X.vRate)}</div>
     <div style="position:absolute;top:38px;left:${L(u95)};transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--s-visit)">최대 ${pct(u95)}</div>
     <div style="position:absolute;top:10px;left:${L(p0)};width:3px;height:34px;background:var(--s-ship)"></div>
-    <div style="position:absolute;top:38px;left:${L(p0)};transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--s-ship);font-weight:700">택배 ${pct(p0)}</div></div>`;
+    <div style="position:absolute;top:38px;left:${L(p0)};transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--s-ship);font-weight:700">택배 ${pctE(p0)}</div></div>`;
   const brief=n<30?`아직 방문 ${n}건이라 판정 전입니다(30건부터 판정).`
     :`방문 ${n}명 중 ${X.vR}명이 취소해 <b>${pct(X.vRate)}</b>입니다. 같은 연령의 택배 고객이었다면 약 <b>${Math.round(expN)}명</b>이 취소했을 것으로, ${gapN>0?`<b>${gapN.toFixed(0)}명 정도 차이</b>입니다`:'방문이 더 많이 취소했습니다'}. `
-     +(v.t==='오차범위 밖'?`오차범위(${pct(l95)} ~ ${pct(u95)})의 최대치도 택배(${pct(p0)})보다 낮아 <b>오차범위 밖</b> — 방문설치 효과로 볼 수 있습니다.`
-      :v.t==='오차범위 경계'?`오차범위(${pct(l95)} ~ ${pct(u95)}) 안에 택배(${pct(p0)})가 들어가지만, 오차범위를 좁게 잡으면(최대 ${pct(u80)}) 밖이라 <b>오차범위 경계</b> — 건수를 늘려 재확인이 필요합니다.`
-      :`${n}명 규모에선 ${flipN}명만 더 취소했어도 택배와 같아지는 차이라, 방문 취소율의 오차범위는 ${pct(l95)} ~ ${pct(u95)}이고 택배 ${pct(p0)}가 이 안에 들어갑니다(<b>오차범위 이내</b>).`)
+     +(v.t==='오차범위 밖'?`오차범위(${pct(l95)} ~ ${pct(u95)})의 최대치도 택배(${pctE(p0)})보다 낮아 <b>오차범위 밖</b> — 방문설치 효과로 볼 수 있습니다.`
+      :v.t==='오차범위 경계'?`오차범위(${pct(l95)} ~ ${pct(u95)}) 안에 택배(${pctE(p0)})가 들어가지만, 오차범위를 좁게 잡으면(최대 ${pct(u80)}) 밖이라 <b>오차범위 경계</b> — 건수를 늘려 재확인이 필요합니다.`
+      :`${n}명 규모에선 ${flipN}명만 더 취소했어도 택배와 같아지는 차이라, 방문 취소율의 오차범위는 ${pct(l95)} ~ ${pct(u95)}이고 택배 ${pctE(p0)}가 이 안에 들어갑니다(<b>오차범위 이내</b>).`)
      +(betterProb(X)!=null?` 이 범위 안에서 따져 보면 <b>방문이 택배보다 나을 확률은 약 ${Math.round(betterProb(X)*100)}%</b>입니다.`:'');
   $('sigExplain').innerHTML=`<div style="background:var(--visit-soft);border-radius:10px;padding:12px 16px;margin-top:0"><div style="font-size:12px;color:var(--text-2);margin-bottom:4px">브리핑 한 줄</div>${brief}</div>
   ${n>=30?bar:''}
@@ -1329,7 +1331,7 @@ function renderHero(A){
   const n=X.vN,pr=Math.min(1,n/30),pre=A.vRows.filter(x=>x.st==='pre').length;
   $('hero').innerHTML=`<div class="hero">
     <div class="side ship"><div class="l"><span class="dot" style="background:var(--s-ship)"></span>택배 취소율${has?' (연령보정)':''}</div>
-      <div class="big">${has?pct(X.exp):pct(base)}</div>
+      <div class="big">${has?pctE(X.exp):pct(base)}</div>
       <div class="d">${has?`같은 기간 택배 ${num(X.cN)}건 · 보정 전 ${pct(X.cRate)}`:contracts.length?'톡이즈 계약 전체':B.label}</div></div>
     <div class="mid"><div class="d">차이</div><div class="diff" style="color:${dCol}">${diff==null?'vs':pp(diff)}</div>
       <div class="d">${sigLabel(X)}</div></div>
@@ -1415,7 +1417,7 @@ function renderRoi(A,R){
     kpi('순이익',`<span class="${cls(R.net)}">${won(R.net)}</span>`,'')+
     kpi('ROI',`<span class="${cls(R.roi)}">${pct(R.roi,0)}</span>`,`손익분기 방문단가 ${won(R.be)}`);
   $('roiFormula').textContent=R.d==null?'판정 가능한 방문 데이터가 생기면 계산 과정이 표시됩니다.':
-`줄어든 취소율 = 택배 기대취소율 ${pct(A.exp)} − 방문 취소율 ${pct(A.vRate)} = ${pp(R.d)}
+`줄어든 취소율 = 택배 기대취소율 ${pctE(A.exp)} − 방문 취소율 ${pct(A.vRate)} = ${pp(R.d)}
 방어 건수     = ${pp(R.d)} × ${R.n}건 = ${R.defended.toFixed(2)}건
 방어 이익     = ${R.defended.toFixed(2)}건 × ${won(S.profit)} = ${won(R.gain)}
 학습케어 절감 = ${won(R.care)} × ${R.n}건 = ${won(R.saving)}
