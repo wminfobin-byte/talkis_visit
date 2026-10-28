@@ -1334,7 +1334,7 @@ function renderHero(A){
   $('hero').innerHTML=`<div class="hero">
     <div class="side ship"><div class="l"><span class="dot" style="background:var(--s-ship)"></span>택배 취소율${has?' (연령보정)':''}</div>
       <div class="big">${has?pctE(X.exp):pct(base)}</div>
-      <div class="d">${has?`택배 ${num(X.cN)}건 (신청일 ${poolRange(X.pool)}) · 보정 전 ${pct(X.cRate)}`:contracts.length?'톡이즈 계약 전체':B.label}</div></div>
+      <div class="d">${has?`택배 ${num(X.cN)}건 (계약일 ${poolRange(X.pool)}) · 보정 전 ${pct(X.cRate)}`:contracts.length?'톡이즈 계약 전체':B.label}</div></div>
     <div class="mid"><div class="d">차이</div><div class="diff" style="color:${dCol}">${diff==null?'vs':pp(diff)}</div>
       <div class="d">${sigLabel(X)}</div></div>
     <div class="side visit"><div class="l"><span class="dot" style="background:var(--s-visit)"></span>방문설치 취소율</div>
