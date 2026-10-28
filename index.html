@@ -353,7 +353,7 @@ main{word-break:keep-all;overflow-wrap:break-word}
   <div class="card"><h2>취소 사유</h2><div id="revCancel"></div></div>
   <div class="card key"><div class="key-eye">확대 효과 (추정)</div><h2>방문케어 확대 시 영업이익 개선</h2><div id="gainCard"></div></div>
   <div class="chap"><b>2 핵심</b><span>정규 운영을 위한 세 가지</span><em>고객 경험 · 케어 퀄리티 · 케어 최적화</em></div>
-  <div class="card key"><div class="key-eye">핵심</div><h2>세 가지가 갖춰져야 정규 운영할 수 있음</h2><div id="revCore"></div></div>
+  <div class="card key"><div class="key-eye">핵심</div><h2>정규 운영을 위한 핵심 세 가지</h2><div id="revCore"></div></div>
   <div class="chap"><b>3 운영 체크리스트</b><span>방문 전 · 중 · 후 표준 절차</span><em>정규 운영 시 표준 매뉴얼 초안</em></div>
   <div class="card"><h2>단계별 체크리스트</h2><div id="revFix"></div></div>
   <div class="chap"><b>4 앱 개선 요청</b><span>현장에서 나온 앱 개선 요청</span><em>12월 앱 개선 계획 참고</em></div>
@@ -1564,7 +1564,7 @@ function renderCore(){
     <div class="ap-more-h">그 외 요청</div><div class="ap-more">${APP_MORE.map(([t,s,c])=>`<div class="ap-m"><div class="ap-ml"><span>${t}</span>${s?`<small>${s}</small>`:''}</div><b>${c!=null?c+'건':'–'}</b><div class="rv-bar"><i style="width:${(c||0)/mx*100}%"></i></div></div>`).join('')}</div>`}
   if($('revCore'))$('revCore').innerHTML=CORE.map((c,i)=>`<div class="core"><div class="core-l"><span class="core-n">${i+1}</span><div><div class="core-s">${c.s}</div><div class="core-w">${c.w}</div></div></div>
     <ul>${c.pts.map(p=>`<li>${p}</li>`).join('')}</ul></div>`).join('')
-    +`<div class="core-end">고객 경험 · 케어 퀄리티 · 케어 최적화 — 세 가지가 갖춰져야 정규 운영 가능</div>`;
+    +`<div class="core-end">고객 경험 · 케어 퀄리티 · 케어 최적화 — 정규 운영을 위한 핵심 세 가지</div>`;
 }
 function renderKeyCards(N){
   renderCore();
