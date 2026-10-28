@@ -584,7 +584,7 @@ const CT={orderKey:['주문키',2],custKey:['고객키',3],manager:['담당자',
 // 파일 미업로드 시 기준선: 2026년 6~9월 톡이즈 계약 실측 (권역|연령대 → [계약, 반품])
 const BASE={months:4,label:'내장 기준선 (26년 6~9월 실측)',data:{"수도권|0":[146,6],"제주|75":[5,1],"부울경|60":[45,4],"수도권|70":[347,33],"수도권|65":[317,28],"호남|65":[52,4],"수도권|60":[151,11],"수도권|75":[306,52],"대구경북|70":[43,1],"부울경|65":[92,12],"충청|70":[61,4],"부울경|75":[65,9],"부울경|70":[84,14],"수도권|80":[258,47],"충청|65":[72,6],"호남|0":[27,0],"부울경|80":[51,12],"충청|80":[40,9],"충청|75":[45,5],"제주|0":[7,0],"호남|80":[31,7],"강원|75":[8,2],"대구경북|80":[30,6],"부울경|0":[43,2],"강원|65":[26,2],"호남|70":[44,6],"호남|75":[36,9],"충청|0":[38,3],"충청|60":[37,2],"대구경북|75":[24,4],"대구경북|65":[46,2],"제주|70":[10,1],"대구경북|0":[26,3],"호남|60":[28,3],"대구경북|60":[26,1],"강원|70":[22,1],"강원|80":[14,4],"강원|0":[8,0],"강원|60":[9,1],"제주|60":[5,0],"제주|65":[5,2],"제주|80":[5,0]}};
 const DEFAULTS={waitDays:0,padDays:30,asOf:'',sameRegion:false,
-  profit:1000000,careCost:20000,careReplaced:true,visitCost:25000,testFixed:0,
+  profit:1000000,careCost:20000,careReplaced:true,visitCost:50000,testFixed:0,
   cmpMetric:'init',expAge:'75',coverage:100,relRed:'',salary:3000000,burden:20,carCost:700000,etcCost:100000,
   capMetro:5,capLocal:3.5,workDays:21,util:80,hqCost:0,outCost:25000,expMode:"piece"};
 // 실제 수치 없이 임의로 넣은 가정 — 확정 전까지 화면에 "임의값"으로 표시
@@ -597,7 +597,7 @@ try{Object.assign(S,JSON.parse(localStorage.getItem(LS_KEY)||'{}'))}catch(e){}
 S.confirmed={...(S.confirmed||{})};
 // 설정 v2 (2026-10-13): 확장 기본 = 건당 지급 25,000원. 예전에 저장된 직고용/외주 6만원 설정은 새 기본값으로 바꿈
 // 설정 v3: 테스트 방문 1건 비용 8만 → 2.5만
-if((S.ver||0)<3){if((S.ver||0)<2){S.expMode=DEFAULTS.expMode;S.outCost=DEFAULTS.outCost}S.visitCost=DEFAULTS.visitCost;S.ver=3;try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
+if((S.ver||0)<4){if((S.ver||0)<2){S.expMode=DEFAULTS.expMode;S.outCost=DEFAULTS.outCost}S.visitCost=DEFAULTS.visitCost;S.ver=4;try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
 function saveSettings(){try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}}
 function confirmProv(k,on=true){if(on)S.confirmed[k]=true;else delete S.confirmed[k];saveSettings();render()}
 
